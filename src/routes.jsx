@@ -24,6 +24,14 @@ import SearchForm from "./pages/dashboard/Consultar";
 import QuestionnairePage from "./pages/dashboard/QuestionnairePage";
 import ProcessManagement from "./pages/dashboard/process-management";
 import TableAmbiente from "./pages/dashboard/AmbiHorario/Ambiente";
+import TableTipoVinculo from "./pages/dashboard/AmbiHorario/Tipo-vinculo";
+import { TableFase } from "./pages/dashboard/AmbiHorario/Fase";
+import { TableNivelFormacion } from "./pages/dashboard/AmbiHorario/Nivelformacion";
+import TableInstructor from "./pages/dashboard/AmbiHorario/Instructor";
+import TableProyecto from "./pages/dashboard/AmbiHorario/Proyecto";
+import TablePeriodo from "./pages/dashboard/AmbiHorario/Periodo";
+import TablePrograma from "./pages/dashboard/AmbiHorario/Programa";
+import TableCompetencia from "./pages/dashboard/AmbiHorario/Competencia";
 
 
 const icon = {
@@ -119,7 +127,6 @@ export const routes = [
         path: "/notifications",
         element: <Notifications />,
       },
-
       {
         name: "Gestion de aprendices",
         path: "/aprendices",
@@ -150,6 +157,46 @@ export const routes = [
         path: "/ambiente",
         element: <TableAmbiente/>
       },
+      {
+        name: "tipovinculo",
+        path: "/tipovinculo",
+        element: <TableTipoVinculo/>
+      },
+      {
+        name: "fase",
+        path: "/fase",
+        element: <TableFase/>
+      },
+      {
+        name: "nivelformacion",
+        path: "/nivelformacion",
+        element: <TableNivelFormacion/>
+      },
+      {
+        name: "instructor",
+        path: "/instructor",
+        element: <TableInstructor/>
+      },
+      {
+        name: "proyecto",
+        path: "/proyecto",
+        element: <TableProyecto/>
+      },
+      {
+        name: "periodo",
+        path: "/periodo",
+        element: <TablePeriodo/>
+      },
+      {
+        name: "programa",
+        path: "/programa",
+        element: <TablePrograma/>
+      },
+      {
+        name: "competencia",
+        path: "/competencia",
+        element: <TableCompetencia/>
+      },
     ],
   },
   {
@@ -174,9 +221,6 @@ export const routes = [
         name: "forgot password",
         path: "/forgot-password",
         element : <ForgotPassword/>,
-
-
-        
       },
       {
         icon : <RectangleStackIcon {...icon} />,

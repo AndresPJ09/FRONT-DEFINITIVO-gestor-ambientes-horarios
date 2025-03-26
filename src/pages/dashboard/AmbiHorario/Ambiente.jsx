@@ -15,7 +15,7 @@ export function TableAmbiente() {
   const [selectedRow, setSelectedRow] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [notification, setNotification] = useState(null);
+  const [notification, setNotification] = useState(null)
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -44,11 +44,6 @@ export function TableAmbiente() {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedRow(null);
-  };
-
-  const showNotification = (type, message) => {
-    setNotification({ type, message });
-    setTimeout(() => setNotification(null), 5000);
   };
 
   const handleSubmit = async (formData) => {
@@ -111,7 +106,7 @@ export function TableAmbiente() {
             timer: 1500,
           });
           // Actualiza el estado manualmente
-            await fetchData()
+          await fetchData()
         }
       });
     } catch (error) {
@@ -131,28 +126,20 @@ export function TableAmbiente() {
     { name: "capacidad", label: "Capacidad", type: "number" },
     selectedRow
       ? {
-          name: "estado",
-          label: "Estado",
-          type: "select",
-          options: [
-            { value: true, label: "Activo" },
-            { value: false, label: "Inactivo" },
-          ],
-        }
+        name: "estado",
+        label: "Estado",
+        type: "select",
+        options: [
+          { value: true, label: "Activo" },
+          { value: false, label: "Inactivo" },
+        ],
+      }
       : null,
   ].filter(Boolean);
 
   const columns = [
-    {
-      name: "codigo",
-      selector: (row) => row.codigo,
-      sortable: true,
-    },
-    {
-      name: "nombre",
-      selector: (row) => row.nombre,
-      sortable: true,
-    },
+    { name: "codigo", selector: (row) => row.codigo, sortable: true,},
+    { name: "nombre", selector: (row) => row.nombre, sortable: true,},
     {
       name: "capacidad",
       selector: (row) => row.capacidad,
@@ -225,9 +212,8 @@ export function TableAmbiente() {
       />
       {notification && (
         <div
-          className={`fixed top-10 right-4 p-4 rounded-lg text-white ${
-            notification.type === "green" ? "bg-green-500" : "bg-red-500"
-          } transition-opacity duration-500 ${notification ? "opacity-100" : "opacity-0"}`}
+          className={`fixed top-10 right-4 p-4 rounded-lg text-white ${notification.type === "green" ? "bg-green-500" : "bg-red-500"
+            } transition-opacity duration-500 ${notification ? "opacity-100" : "opacity-0"}`}
         >
           {notification.message}
         </div>

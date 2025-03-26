@@ -188,28 +188,44 @@ estado : false,
       name: "Acciones",
       cell: (row) => (
         <div className="flex items-center gap-2">
-        <Button variant="outline" size="sm" className="flex items-center bg-green-500 text-white hover:bg-green-500 hover:bg-opacity-80 gap-2 " onClick={() => handleAction(row)}>
-              <CheckIcon className="h-4 w-4" />
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex items-center bg-green-500 text-white hover:bg-green-500 hover:bg-opacity-80 gap-2"
+            onClick={() => handleAction(row)}
+          >
+            <CheckIcon className="h-4 w-4" />
           </Button>
-        <Button variant="outline" size="sm" className="flex items-center bg-red-500 text-white hover:bg-red-500 hover:bg-opacity-80 gap-2 " onClick={() => handleDelete(row)}>
-              <TrashIcon className="h-4 w-4" />
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex items-center bg-red-500 text-white hover:bg-red-500 hover:bg-opacity-80 gap-2"
+            onClick={() => handleDelete(row)}
+          >
+            <TrashIcon className="h-4 w-4" />
           </Button>
         </div>
       ),
       ignoreRowClick: true,
       allowOverflow: true,
       button: true,
+      width: "150px",
     },
-  ]
+  ];
 
   return (
-    <div className=" mt-6 mb-8 space-y-6">
+    <div className="mt-6 mb-8 space-y-6 bg-gradient-to-br from-blue-gray-50 mt-12 rounded-xl min-h-screen via-white to-white">
       <Card className="bg-gradient-to-br from-blue-gray-50 rounded-xl min-h-screen via-white to-white">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-2xl font-bold">Gestión de Vistas</CardTitle>
-          <Button variant="default" size="sm" className="flex items-center gap-2" onClick={() => setIsModalOpen(true)}>
+          <CardTitle className="text-2xl font-bold">Gestión de vistas</CardTitle>
+          <Button
+            variant="default"
+            size="sm"
+            className="flex items-center gap-2"
+            onClick={() => setIsModalOpen(true)}
+          >
             <PlusIcon className="h-4 w-4" />
-            Agregar Nueva Vista
+            Agregar Nuevo
           </Button>
         </CardHeader>
         <CardContent>
@@ -224,23 +240,20 @@ estado : false,
         isOpen={isModalOpen}
         onClose={handleCloseModal}
         onSubmit={handleSubmit}
-        title={selectedRow ? "Editar Vista" : "Crear Nueva Vista"}
+        title={selectedRow ? "Editar vista" : "Crear nuevo vista"}
         fields={modalFields}
-        initialData={selectedRow ? {...selectedRow} : null}
+        initialData={selectedRow ? { ...selectedRow } : null}
       />
       {notification && (
         <div
-          className={`fixed top-10 right-4 p-4 rounded-lg text-white ${
-            notification.type === "green" ? "bg-green-500" : "bg-red-500"
-          } transition-opacity duration-500 ${notification ? "opacity-100" : "opacity-0"}`}
+          className={`fixed top-10 right-4 p-4 rounded-lg text-white ${notification.type === "green" ? "bg-green-500" : "bg-red-500"
+            } transition-opacity duration-500 ${notification ? "opacity-100" : "opacity-0"}`}
         >
           {notification.message}
         </div>
       )}
     </div>
-
-    
-  )
+  );
 }
 
 export default TableView

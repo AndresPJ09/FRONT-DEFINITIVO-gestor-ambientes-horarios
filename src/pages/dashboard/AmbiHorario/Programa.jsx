@@ -9,31 +9,49 @@ import { CheckIcon, PlusIcon, TrashIcon } from "lucide-react";
 import { DynamicModal } from "@/widgets/Modal/DynamicModal";
 import Swal from "sweetalert2";
 
-export function TableFase() {
+export function TablePrograma() {
     const [data, setData] = useState([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedRow, setSelectedRow] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
     const [notification, setNotification] = useState(null)
+    const [dataNivelFormacion, setDataNivelFormacion] = useState([])
   
     const fetchData = useCallback(async () => {
       setIsLoading(true);
       setError(null);
       try {
-        const response = await Service.get("/fase/");
+        const response = await Service.get("/programa/");
         setData(response || []);
       } catch (error) {
-        console.error("Error al obtener las fases:", error);
+        console.error("Error al obtener las programas:", error);
         setError("Error al cargar los datos. Intente de nuevo más tarde.");
         setData([]);
       } finally {
         setIsLoading(false);
       }
     }, []);
+
+    
+    const fetchNivelFormacion = async () => {
+        try {
+            const response = await Service.get("/nivelformacion/")
+
+            setDataNivelFormacion(response.map((item) => ({
+                value: item.id,
+                label: item.nombre,
+            }))
+            )
+        } catch (error) {
+            console.error("Error al obtener los niveles de formación:", error)
+            setDataNivelFormacion([])
+        }
+    }
   
     useEffect(() => {
       fetchData();
+      fetchNivelFormacion()
     }, [fetchData]);
   
     const handleAction = (row) => {
@@ -51,11 +69,11 @@ export function TableFase() {
         setIsLoading(true);
         setError(null);
         if (selectedRow) {
-          await Service.put(`/fase/${selectedRow.id}/`, formData);
-          Swal.fire("Fase actualizada", "", "success");
+          await Service.put(`/programa/${selectedRow.id}/`, formData);
+          Swal.fire("Programa actualizada", "", "success");
         } else {
-          await Service.post("/fase/", { ...formData, estado: true });
-          Swal.fire("Fase creada", "", "success");
+          await Service.post("/programa/", { ...formData, estado: true });
+          Swal.fire("Programa creada", "", "success");
         }
         await fetchData();
         handleCloseModal();
@@ -68,7 +86,7 @@ export function TableFase() {
   
     const handleDelete = async (row) => {
       Swal.fire({
-        title: "¿Estás seguro de eliminar esta fase?",
+        title: "¿Estás seguro de eliminar esta programa?",
         text: "Esta acción no se puede deshacer.",
         icon: "warning",
         showCancelButton: true,
@@ -80,9 +98,9 @@ export function TableFase() {
       }).then(async (result) => {
         if (result.isConfirmed) {
           try {
-            await Service.delete(`/fase/${row.id}/`);
+            await Service.delete(`/programa/${row.id}/`);
             Swal.fire({
-              title: "Fase eliminada",
+              title: "Programa eliminada",
               icon: "success",
               showConfirmButton: false,
               timer: 1500,
@@ -90,10 +108,10 @@ export function TableFase() {
             // Actualiza el estado manualmente
             setData((prevData) => prevData.filter((item) => item.id !== row.id));
           } catch (error) {
-            console.error("Error al eliminar la fase:", error);
+            console.error("Error al eliminar el programa:", error);
             Swal.fire({
               title: "Error",
-              text: "No se pudo eliminar la fase. Por favor, inténtalo de nuevo más tarde.",
+              text: "No se pudo eliminar el programa. Por favor, inténtalo de nuevo más tarde.",
               icon: "error",
               position: "bottom-right",
               showConfirmButton: false,
@@ -105,8 +123,9 @@ export function TableFase() {
     };
   
     const modalFields = [
+      { name: "codigo", label: "Código", type: "text" },
       { name: "nombre", label: "Nombre", type: "text" },
-      { name: "descripcion", label: "Descripción", type: "textarea" },
+      { name: "nivel_formacion_id", label: "ID del nivel de formación", type: "select", options: dataNivelFormacion },
       selectedRow
         ? {
             name: "estado",
@@ -121,8 +140,13 @@ export function TableFase() {
     ].filter(Boolean);
   
     const columns = [
+      { name: "Código", selector: (row) => row.codigo, sortable: true },
       { name: "Nombre", selector: (row) => row.nombre, sortable: true },
-      { name: "Descripción", selector: (row) => row.descripcion, sortable: true },
+      {
+        name: "Nivel de formación",
+        selector: (row) => dataNivelFormacion.find((item) => item.value === row.nivel_formacion_id)?.label,
+        sortable: true,
+    },
       {
         name: "Estado",
         selector: (row) => (row.estado ? "Activo" : "Inactivo"),
@@ -161,7 +185,7 @@ export function TableFase() {
         <div className="mt-6 mb-8 space-y-6 bg-gradient-to-br from-blue-gray-50 mt-12 rounded-xl min-h-screen via-white to-white">
           <Card className="bg-gradient-to-br from-blue-gray-50 rounded-xl min-h-screen via-white to-white">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-2xl font-bold">Gestión de Fases</CardTitle>
+              <CardTitle className="text-2xl font-bold">Gestión de Programas</CardTitle>
               <Button
                 variant="default"
                 size="sm"
@@ -184,7 +208,7 @@ export function TableFase() {
             isOpen={isModalOpen}
             onClose={handleCloseModal}
             onSubmit={handleSubmit}
-            title={selectedRow ? "Editar fase" : "Crear Nuevo fase"}
+            title={selectedRow ? "Editar programa" : "Crear Nuevo programa"}
             fields={modalFields}
             initialData={selectedRow ? { ...selectedRow } : null}
           />
@@ -200,5 +224,5 @@ export function TableFase() {
       );
     }
     
-    export default TableFase;
+    export default TablePrograma;
     

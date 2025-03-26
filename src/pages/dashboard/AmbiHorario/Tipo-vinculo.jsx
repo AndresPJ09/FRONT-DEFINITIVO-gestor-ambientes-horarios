@@ -15,13 +15,13 @@ export function TableTipoVinculo() {
   const [selectedRow, setSelectedRow] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [notification, setNotification] = useState(null)
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
       const response = await Service.get("/tipovinculo/");
-      console.log("Datos recibidos del servidor:", response);
       setData(response || []);
     } catch (error) {
       console.error("Error al obtener los tipos de vínculo:", error);
@@ -68,7 +68,7 @@ export function TableTipoVinculo() {
 
   const handleDelete = async (row) => {
     Swal.fire({
-      title: "¿Eliminar este Tipo de Vínculo?",
+      title: "¿Estás seguro de eliminar este Tipo de Vínculo?",
       text: "Esta acción no se puede deshacer.",
       icon: "warning",
       showCancelButton: true,
@@ -76,11 +76,29 @@ export function TableTipoVinculo() {
       cancelButtonColor: "#3085d6",
       confirmButtonText: "Sí, eliminar",
       cancelButtonText: "Cancelar",
+      reverseButtons: true,
     }).then(async (result) => {
       if (result.isConfirmed) {
-        await Service.delete(`/tipovinculo/${row.id}/`);
-        Swal.fire("Eliminado", "", "success");
-        await fetchData();
+        try {
+          await Service.delete(`/tipovinculo/${row.id}/`);
+          Swal.fire({
+            title: "Tipo de vínculo eliminado",
+            icon: "success",
+            showConfirmButton: false,
+            timer: 1500,
+          });
+          setData((prevData) => prevData.filter((item) => item.id !== row.id));
+        } catch (error) {
+          console.error("Error al eliminar el tipo de vínculo:", error);
+          Swal.fire({
+            title: "Error",
+            text: "No se pudo eliminar el tipo de vínculo. Por favor, inténtalo de nuevo.",
+            icon: "error",
+            position: "bottom-right",
+            showConfirmButton: false,
+            timer: 1500,
+          });
+        }
       }
     });
   };
@@ -88,17 +106,17 @@ export function TableTipoVinculo() {
   const modalFields = [
     { name: "codigo", label: "Código", type: "text" },
     { name: "nombre", label: "Nombre", type: "text" },
-    { name: "descripcion", label: "Descripción", type: "text" },
+    { name: "descripcion", label: "Descripción", type: "textarea" },
     selectedRow
       ? {
-          name: "estado",
-          label: "Estado",
-          type: "select",
-          options: [
-            { value: true, label: "Activo" },
-            { value: false, label: "Inactivo" },
-          ],
-        }
+        name: "estado",
+        label: "Estado",
+        type: "select",
+        options: [
+          { value: true, label: "Activo" },
+          { value: false, label: "Inactivo" },
+        ],
+      }
       : null,
   ].filter(Boolean);
 
@@ -118,7 +136,7 @@ export function TableTipoVinculo() {
           <Button
             variant="outline"
             size="sm"
-            className="bg-green-500 text-white hover:bg-green-600"
+            className="flex items-center bg-green-500 text-white hover:bg-green-500 hover:bg-opacity-80 gap-2"
             onClick={() => handleAction(row)}
           >
             <CheckIcon className="h-4 w-4" />
@@ -126,7 +144,7 @@ export function TableTipoVinculo() {
           <Button
             variant="outline"
             size="sm"
-            className="bg-red-500 text-white hover:bg-red-600"
+            className="flex items-center bg-red-500 text-white hover:bg-red-500 hover:bg-opacity-80 gap-2"
             onClick={() => handleDelete(row)}
           >
             <TrashIcon className="h-4 w-4" />
@@ -134,7 +152,9 @@ export function TableTipoVinculo() {
         </div>
       ),
       ignoreRowClick: true,
+      allowOverflow: true,
       button: true,
+      width: "150px",
     },
   ];
 
@@ -165,10 +185,18 @@ export function TableTipoVinculo() {
         isOpen={isModalOpen}
         onClose={handleCloseModal}
         onSubmit={handleSubmit}
-        title={selectedRow ? "Editar Tipo de Vínculo" : "Crear Nuevo Tipo de Vínculo"}
+        title={selectedRow ? "Editar tipo de vinculo" : "Crear Nuevo tipo de vinculo"}
         fields={modalFields}
         initialData={selectedRow ? { ...selectedRow } : null}
       />
+      {notification && (
+        <div
+          className={`fixed top-10 right-4 p-4 rounded-lg text-white ${notification.type === "green" ? "bg-green-500" : "bg-red-500"
+            } transition-opacity duration-500 ${notification ? "opacity-100" : "opacity-0"}`}
+        >
+          {notification.message}
+        </div>
+      )}
     </div>
   );
 }

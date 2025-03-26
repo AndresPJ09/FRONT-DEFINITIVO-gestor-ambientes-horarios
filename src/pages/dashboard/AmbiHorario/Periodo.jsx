@@ -9,7 +9,7 @@ import { CheckIcon, PlusIcon, TrashIcon } from "lucide-react";
 import { DynamicModal } from "@/widgets/Modal/DynamicModal";
 import Swal from "sweetalert2";
 
-export function TableFase() {
+export function TablePeriodo() {
     const [data, setData] = useState([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedRow, setSelectedRow] = useState(null);
@@ -21,10 +21,10 @@ export function TableFase() {
       setIsLoading(true);
       setError(null);
       try {
-        const response = await Service.get("/fase/");
+        const response = await Service.get("/periodo/");
         setData(response || []);
       } catch (error) {
-        console.error("Error al obtener las fases:", error);
+        console.error("Error al obtener las periodos:", error);
         setError("Error al cargar los datos. Intente de nuevo más tarde.");
         setData([]);
       } finally {
@@ -51,11 +51,11 @@ export function TableFase() {
         setIsLoading(true);
         setError(null);
         if (selectedRow) {
-          await Service.put(`/fase/${selectedRow.id}/`, formData);
-          Swal.fire("Fase actualizada", "", "success");
+          await Service.put(`/periodo/${selectedRow.id}/`, formData);
+          Swal.fire("Periodo actualizada", "", "success");
         } else {
-          await Service.post("/fase/", { ...formData, estado: true });
-          Swal.fire("Fase creada", "", "success");
+          await Service.post("/periodo/", { ...formData, estado: true });
+          Swal.fire("Periodo creada", "", "success");
         }
         await fetchData();
         handleCloseModal();
@@ -68,7 +68,7 @@ export function TableFase() {
   
     const handleDelete = async (row) => {
       Swal.fire({
-        title: "¿Estás seguro de eliminar esta fase?",
+        title: "¿Estás seguro de eliminar esta periodo?",
         text: "Esta acción no se puede deshacer.",
         icon: "warning",
         showCancelButton: true,
@@ -80,9 +80,9 @@ export function TableFase() {
       }).then(async (result) => {
         if (result.isConfirmed) {
           try {
-            await Service.delete(`/fase/${row.id}/`);
+            await Service.delete(`/periodo/${row.id}/`);
             Swal.fire({
-              title: "Fase eliminada",
+              title: "Periodo eliminada",
               icon: "success",
               showConfirmButton: false,
               timer: 1500,
@@ -90,10 +90,10 @@ export function TableFase() {
             // Actualiza el estado manualmente
             setData((prevData) => prevData.filter((item) => item.id !== row.id));
           } catch (error) {
-            console.error("Error al eliminar la fase:", error);
+            console.error("Error al eliminar el periodo:", error);
             Swal.fire({
               title: "Error",
-              text: "No se pudo eliminar la fase. Por favor, inténtalo de nuevo más tarde.",
+              text: "No se pudo eliminar el periodo. Por favor, inténtalo de nuevo más tarde.",
               icon: "error",
               position: "bottom-right",
               showConfirmButton: false,
@@ -106,7 +106,9 @@ export function TableFase() {
   
     const modalFields = [
       { name: "nombre", label: "Nombre", type: "text" },
-      { name: "descripcion", label: "Descripción", type: "textarea" },
+      { name: "fecha_inicio", label: "Fecha inicio", type: "date" },
+      { name: "fecha_inicio", label: "Fecha inicio", type: "date" },
+      { name: "ano", label: "Año", type: "number" },
       selectedRow
         ? {
             name: "estado",
@@ -122,7 +124,9 @@ export function TableFase() {
   
     const columns = [
       { name: "Nombre", selector: (row) => row.nombre, sortable: true },
-      { name: "Descripción", selector: (row) => row.descripcion, sortable: true },
+      { name: "Fecha inicio", selector: (row) => row.fecha_inicio, sortable: true },
+      { name: "Fecha fin", selector: (row) => row.fecha_fin, sortable: true },
+      { name: "Año", selector: (row) => row.ano, sortable: true },
       {
         name: "Estado",
         selector: (row) => (row.estado ? "Activo" : "Inactivo"),
@@ -161,7 +165,7 @@ export function TableFase() {
         <div className="mt-6 mb-8 space-y-6 bg-gradient-to-br from-blue-gray-50 mt-12 rounded-xl min-h-screen via-white to-white">
           <Card className="bg-gradient-to-br from-blue-gray-50 rounded-xl min-h-screen via-white to-white">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-2xl font-bold">Gestión de Fases</CardTitle>
+              <CardTitle className="text-2xl font-bold">Gestión de Periodos</CardTitle>
               <Button
                 variant="default"
                 size="sm"
@@ -184,7 +188,7 @@ export function TableFase() {
             isOpen={isModalOpen}
             onClose={handleCloseModal}
             onSubmit={handleSubmit}
-            title={selectedRow ? "Editar fase" : "Crear Nuevo fase"}
+            title={selectedRow ? "Editar periodo" : "Crear Nuevo periodo"}
             fields={modalFields}
             initialData={selectedRow ? { ...selectedRow } : null}
           />
@@ -200,5 +204,5 @@ export function TableFase() {
       );
     }
     
-    export default TableFase;
+    export default TablePeriodo;
     
