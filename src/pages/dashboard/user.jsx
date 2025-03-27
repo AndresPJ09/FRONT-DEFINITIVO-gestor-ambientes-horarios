@@ -36,7 +36,7 @@ export function TableUser() {
 
   const fetchTipoDocumento = async () => {
     try {
-      const response = await Service.get("/documento/")
+      const response = await Service.get("/tipodocumento/")
 
       setTipoDocumento(response.map((item) => ({
         value: item.id,
@@ -152,7 +152,7 @@ estado : false,
     { name: "correo", label: "Correo electronico", type: "email" },
     { name: "contrasena", label: "Contraseña", type: "password" },
     { name : "documento", label: "Numero de documento", type: "number"},
-    { name: "tipoDocumento", label: "Tipo de documento", type: "select", options: tipoDocumento, },
+    { name: "tipoDocumento", label: "ID del tipo de documento", type: "select", options: tipoDocumento },
   ]
 
   const columns = [
@@ -187,6 +187,7 @@ estado : false,
         selector: (row) => tipoDocumento.find((item) => item.value === row.tipoDocumento)?.label,
         sortable: true,
       },
+      
     {
       name: "Acciones",
       cell: (row) => (
