@@ -9,7 +9,7 @@ import { CheckIcon, PlusIcon, TrashIcon } from "lucide-react";
 import { DynamicModal } from "@/widgets/Modal/DynamicModal";
 import Swal from "sweetalert2";
 
-export function TableConsolidadoHorario(){
+export function TableHorario(){
     const [data, setData] = useState([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedRow, setSelectedRow] = useState(null);
@@ -21,7 +21,7 @@ export function TableConsolidadoHorario(){
         setIsLoading(true);
         setError(null);
         try {
-            const response = await Service.get("/consolidadohorario/");
+            const response = await Service.get("/horario/");
             setData(response || []);
         } catch (error) {
             console.error("Error al obtener las horarios:", error);
@@ -33,4 +33,4 @@ export function TableConsolidadoHorario(){
     }, []);
 }
 
-export default TableConsolidadoHorario
+export default TableHorario

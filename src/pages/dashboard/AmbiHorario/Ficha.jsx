@@ -18,7 +18,47 @@ export function TableFicha() {
     const [notification, setNotification] = useState(null);
     const [dataPrograma, setDataPrograma] = useState([]);
     const [dataProyecto, setDataProyecto] = useState([]);
+    const [formData, setFormData] = useState({});
 
+    // Agregar este useEffect para inicializar formData
+    useEffect(() => {
+        if (isModalOpen) {
+            setFormData(selectedRow || {});
+        }
+    }, [isModalOpen, selectedRow]);
+
+    // Función mejorada para manejar cambios
+    const handleInputChange = (name, value) => {
+        const newFormData = { ...formData, [name]: value };
+
+        // Validación cruzada de fechas
+        if (name === 'fecha_inicio' || name === 'fecha_fin') {
+            const fechaInicio = newFormData.fecha_inicio ? new Date(newFormData.fecha_inicio) : null;
+            const fechaFin = newFormData.fecha_fin ? new Date(newFormData.fecha_fin) : null;
+
+            // Validar que fecha fin no sea anterior a inicio
+            if (fechaInicio && fechaFin && fechaFin < fechaInicio) {
+                // Mostrar notificación
+                showNotification('red', 'La fecha fin no puede ser anterior a la fecha inicio');
+
+                // Revertir el cambio si es inválido
+                if (name === 'fecha_fin') {
+                    newFormData.fecha_fin = formData.fecha_fin;
+                } else {
+                    newFormData.fecha_inicio = formData.fecha_inicio;
+                }
+            }
+
+            // Calcular semanas si ambas fechas son válidas
+            if (fechaInicio && fechaFin && fechaFin >= fechaInicio) {
+                const diffTime = Math.abs(fechaFin - fechaInicio);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                newFormData.numero_semanas = Math.ceil(diffDays / 7);
+            }
+        }
+
+        setFormData(newFormData);
+    };
 
     const fetchData = useCallback(async () => {
         setIsLoading(true);
@@ -79,28 +119,89 @@ export function TableFicha() {
     const handleCloseModal = () => {
         setIsModalOpen(false);
         setSelectedRow(null);
+        setFormData((prevFormData) => ({
+            ...prevFormData,
+            fecha_inicio: "",
+            fecha_fin: "",
+            fin_lectiva: "",
+        }));
     };
+
+    document.addEventListener("DOMContentLoaded", function () {
+        function calcularSemanas() {
+            const startDateInput = document.querySelector("[name='fecha_inicio']");
+            const endDateInput = document.querySelector("[name='fecha_fin']");
+            const weeksInput = document.querySelector("[name='numero_semanas']");
+    
+            if (startDateInput && endDateInput && weeksInput) {
+                const startDate = new Date(startDateInput.value);
+                const endDate = new Date(endDateInput.value);
+    
+                if (!isNaN(startDate) && !isNaN(endDate) && endDate >= startDate) {
+                    const differenceInTime = endDate - startDate;
+                    const differenceInWeeks = Math.floor(differenceInTime / (1000 * 60 * 60 * 24 * 7));
+                    weeksInput.value = differenceInWeeks;
+                } else {
+                    weeksInput.value = "";
+                }
+            }
+        }
+    
+        document.body.addEventListener("change", function (event) {
+            if (event.target.name === "fecha_inicio" || event.target.name === "fecha_fin") {
+                calcularSemanas();
+            }
+        });
+    });
+    
+    
 
     const showNotification = (type, message) => {
         setNotification({ type, message })
         setTimeout(() => setNotification(null), 5000)
-      }
+    }
 
     const handleSubmit = async (formData) => {
+        const fechaInicio = new Date(formData.fecha_inicio);
+        const fechaFin = new Date(formData.fecha_fin);
+
+        if (fechaFin < fechaInicio) {
+            showNotification('red', 'La fecha fin no puede ser anterior a la fecha inicio');
+            return;
+        }
+
         try {
             setIsLoading(true);
             setError(null);
+
             if (selectedRow) {
                 await Service.put(`/ficha/${selectedRow.id}/`, formData);
-                Swal.fire("Ficha actualizada", "", "success");
+                Swal.fire({
+                    title: "Ficha actualizado",
+                    icon: "success",
+                    showConfirmButton: false,
+                    timer: 1500,
+                });
             } else {
                 await Service.post("/ficha/", { ...formData, estado: true });
-                Swal.fire("Ficha creada", "", "success");
+                Swal.fire({
+                    title: "Ficha creado",
+                    icon: "success",
+                    showConfirmButton: false,
+                    timer: 1500,
+                });
             }
+
             await fetchData();
             handleCloseModal();
         } catch (error) {
-            Swal.fire("Error al guardar", error.message, "error");
+            Swal.fire({
+                title: "Error al guardar el ficha",
+                text: error,
+                icon: "error",
+                showConfirmButton: false,
+                timer: 1500,
+            });
         } finally {
             setIsLoading(false);
         }
@@ -127,7 +228,6 @@ export function TableFicha() {
                         showConfirmButton: false,
                         timer: 1500,
                     });
-                    // Actualiza el estado manualmente
                     setData((prevData) => prevData.filter((item) => item.id !== row.id));
                 } catch (error) {
                     console.error("Error al eliminar el ficha:", error);
@@ -143,16 +243,21 @@ export function TableFicha() {
             }
         });
     };
-    
-    
+
     const modalFields = [
         { name: "codigo", label: "Código", type: "text" },
         { name: "programa_id", label: "ID del programa", type: "select", options: dataPrograma },
         { name: "proyecto_id", label: "ID del proyecto", type: "select", options: dataProyecto, colSpan: 2 },
         { name: "fecha_inicio", label: "Fecha inicio", type: "date" },
         { name: "fecha_fin", label: "Fecha fin", type: "date" },
+        {
+            name: "numero_semanas",
+            label: "Número de semanas",
+            type: "number",
+            readOnly: true, // Campo de solo lectura
+            className: "bg-gray-100" // Estilo visual para indicar que está bloqueado
+        },
         { name: "fin_lectiva", label: "Fin lectiva", type: "date" },
-        { name: "numero_semanas", label: "Número de semanas", type: "number", },
         { name: "cupo", label: "Cupo", type: "number" },
         selectedRow
             ? {
@@ -247,7 +352,10 @@ export function TableFicha() {
                 onSubmit={handleSubmit}
                 title={selectedRow ? "Editar ficha" : "Crear Nuevo ficha"}
                 fields={modalFields}
-                initialData={selectedRow ? { ...selectedRow } : null}
+                initialData={formData} // Cambiar a formData
+                onInputChange={handleInputChange} // Pasar la función de manejo
+                minDateForEnd={formData.fecha_inicio} // Para bloquear fechas anteriores
+                maxDateForStart={formData.fecha_fin} // Para bloquear fechas posteriores
             />
             {notification && (
                 <div

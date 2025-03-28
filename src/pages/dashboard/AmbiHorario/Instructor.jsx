@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,7 +19,7 @@ export function TableInstructor() {
     const [formData, setFormData] = useState({
         nombres: '',
         apellidos: '',
-        foto: null, // Para manejar archivos (imagen)
+        foto: null,
         fotoPreview: '',
         identificacion: '',
         tipo_vinculacion_id: 0,
@@ -74,6 +72,7 @@ export function TableInstructor() {
     const handleAction = (row) => {
         setFormData({
             ...row,
+            foto: row.foto || null,
             fotoPreview: row.foto ? `data:image/jpeg;base64,${row.foto}` : '',
         });
         setSelectedRow(row);
@@ -89,17 +88,47 @@ export function TableInstructor() {
         try {
             setIsLoading(true);
             setError(null);
+
+            // Verificar si hay una imagen para enviar
+            if (formData.foto && typeof formData.foto === 'string' && formData.foto.length > 0) {
+                // La imagen ya está en Base64, no necesitamos hacer nada
+            } else if (selectedRow?.foto) {
+                // Si estamos editando y no se cambió la imagen, mantener la original
+                formData.foto = selectedRow.foto;
+            } else {
+                // Si no hay imagen, enviar null
+                formData.foto = null;
+            }
+
             if (selectedRow) {
                 await Service.put(`/instructor/${selectedRow.id}/`, formData);
-                Swal.fire("Instructor actualizado", "", "success");
+                Swal.fire({
+                    title: "Instructor actualizado",
+                    icon: "success",
+                    showConfirmButton: false,
+                    timer: 1500,
+                });
             } else {
                 await Service.post("/instructor/", { ...formData, estado: true });
-                Swal.fire("Instructor creado", "", "success");
+                Swal.fire({
+                    title: "Instructor creado",
+                    icon: "success",
+                    showConfirmButton: false,
+                    timer: 1500,
+                });
             }
+
             await fetchData();
             handleCloseModal();
         } catch (error) {
-            Swal.fire("Error al guardar", error.message, "error");
+            console.error("Error al guardar:", error);
+            Swal.fire({
+                title: "Error al guardar instructor",
+                text: error.response?.data?.message || error.message,
+                icon: "error",
+                showConfirmButton: false,
+                timer: 1500,
+            });
         } finally {
             setIsLoading(false);
         }
@@ -146,38 +175,68 @@ export function TableInstructor() {
 
     const handleFileChange = (e) => {
         const file = e.target.files[0];
-
-        if (file && (file.type === "image/png" || file.type === "image/jpeg")) {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                const base64String = reader.result.split(",")[1];
-                setFormData({
-                    ...formData,
-                    foto: base64String,
-                    fotoPreview: URL.createObjectURL(file),
-
-                });
-            };
-            reader.readAsDataURL(file);
-        } else {
-            alert("Solo se permiten archivos PNG y JPG");
+        
+        if (!file) return;
+    
+        // Validar tipo de archivo
+        const validTypes = ["image/png", "image/jpeg", "image/jpg"];
+        if (!validTypes.includes(file.type)) {
+            Swal.fire({
+                title: "Formato no válido",
+                text: "Solo se permiten archivos PNG, JPG y JPEG",
+                icon: "error",
+                confirmButtonText: "Entendido"
+            });
             e.target.value = "";
+            return;
         }
+    
+        // Validar tamaño (ejemplo: máximo 2MB)
+        const maxSize = 2 * 1024 * 1024; // 2MB
+        if (file.size > maxSize) {
+            Swal.fire({
+                title: "Archivo demasiado grande",
+                text: "El tamaño máximo permitido es 2MB",
+                icon: "error",
+                confirmButtonText: "Entendido"
+            });
+            e.target.value = "";
+            return;
+        }
+    
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            const base64String = reader.result.split(",")[1];
+            setFormData({
+                ...formData,
+                foto: base64String,
+                fotoPreview: URL.createObjectURL(file),
+            });
+        };
+        reader.onerror = () => {
+            Swal.fire({
+                title: "Error",
+                text: "Ocurrió un error al leer la imagen",
+                icon: "error",
+                confirmButtonText: "Entendido"
+            });
+        };
+        reader.readAsDataURL(file);
     };
 
     const handleEliminarImagen = () => {
         // Limpiar input file
-        // Para resetear el input de archivo
-        const fileInput = document.getElementById('miInputFile');
-        fileInput.value = ""; // Solo se permite cadena vacía
-
+        const fileInput = document.getElementById('foto');
+        if (fileInput) fileInput.value = '';
+        
         setFormData({
-            ...formData,
-            foto: null,
-            fotoPreview: null,
-            fotoFile: ''
+          ...formData,
+          foto: null,
+          fotoPreview: null,
+          fotoFile: ''
         });
-    };
+      };
+    
 
 
     const modalFields = [
@@ -189,9 +248,18 @@ export function TableInstructor() {
             name: "foto",
             label: "Foto",
             type: "file",
-            accept: ".png, .jpg, .jpeg", // Restringir formatos permitidos
-            onChange: handleFileChange,
-
+            accept: "image/png, image/jpeg, image/jpg",
+            extraContent: (
+                <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    className="mt-2"
+                    onClick={handleEliminarImagen}
+                >
+                    Eliminar imagen
+                </Button>
+            )
         },
         { name: "tipo_vinculacion_id", label: "ID del tipo de vinculo", type: "select", options: dataTipoVinculo },
         { name: "especialidad", label: "Especialidad", type: "text" },

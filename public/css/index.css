@@ -117,3 +117,47 @@
     @apply bg-background text-foreground;
   }
 }
+
+
+.flatpickr-calendar {
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  z-index: 99999 !important;
+}
+
+/* Fix for Flatpickr in Material Tailwind */
+.flatpickr-calendar {
+  z-index: 9999 !important;
+  background: white !important;
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1) !important;
+  border: 1px solid #e5e7eb !important;
+}
+
+.flatpickr-day.selected {
+  background: #6366f1 !important;
+  border-color: #6366f1 !important;
+}
+
+/* Fix for input focus */
+input[data-input].flatpickr-input:focus {
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3) !important;
+}
+
+/* Fix para diálogos grandes 
+[role="dialog"] {
+  max-width: none !important;
+  width: auto !important;
+}
+*/
+
+/* Mejoras para selects en modales */
+.select-content {
+  z-index: 99999 !important;
+}
+
+/* Ajuste de altura para campos */
+.min-h-input {
+  min-height: 42px;
+}
