@@ -84,7 +84,47 @@ export function TableInstructor() {
         setSelectedRow(null);
     };
 
+    // Función para mostrar notificaciones
+    const showNotification = (type, message) => {
+        setNotification({ type, message });
+        setTimeout(() => setNotification(null), 5000);
+    };
+
+    // Función para manejar cambios en los inputs
+    const handleInputChange = (name, value) => {
+        const newData = { ...formData, [name]: value };
+
+        // Validación cruzada de fechas
+        if (name === 'fecha_inicio' || name === 'fecha_finalizacion') {
+            const fechaInicio = newData.fecha_inicio ? new Date(newData.fecha_inicio) : null;
+            const fechaFin = newData.fecha_finalizacion ? new Date(newData.fecha_finalizacion) : null;
+
+            // Validar que fecha fin no sea anterior a inicio
+            if (fechaInicio && fechaFin && fechaFin < fechaInicio) {
+                showNotification('red', 'La fecha de finalización no puede ser anterior a la fecha de inicio');
+
+                // Revertir el cambio inválido
+                if (name === 'fecha_finalizacion') {
+                    newData.fecha_finalizacion = formData.fecha_finalizacion;
+                } else {
+                    newData.fecha_inicio = formData.fecha_inicio;
+                }
+            }
+        }
+
+        setFormData(newData);
+    };
+
     const handleSubmit = async (formData) => {
+        // Validación final de fechas
+        const fechaInicio = data.fecha_inicio ? new Date(data.fecha_inicio) : null;
+        const fechaFin = data.fecha_finalizacion ? new Date(data.fecha_finalizacion) : null;
+
+        if (fechaInicio && fechaFin && fechaFin < fechaInicio) {
+            showNotification('red', 'La fecha de finalización no puede ser anterior a la fecha de inicio');
+            return;
+        }
+
         try {
             setIsLoading(true);
             setError(null);
@@ -175,9 +215,9 @@ export function TableInstructor() {
 
     const handleFileChange = (e) => {
         const file = e.target.files[0];
-        
+
         if (!file) return;
-    
+
         // Validar tipo de archivo
         const validTypes = ["image/png", "image/jpeg", "image/jpg"];
         if (!validTypes.includes(file.type)) {
@@ -190,7 +230,7 @@ export function TableInstructor() {
             e.target.value = "";
             return;
         }
-    
+
         // Validar tamaño (ejemplo: máximo 2MB)
         const maxSize = 2 * 1024 * 1024; // 2MB
         if (file.size > maxSize) {
@@ -203,7 +243,7 @@ export function TableInstructor() {
             e.target.value = "";
             return;
         }
-    
+
         const reader = new FileReader();
         reader.onloadend = () => {
             const base64String = reader.result.split(",")[1];
@@ -228,16 +268,14 @@ export function TableInstructor() {
         // Limpiar input file
         const fileInput = document.getElementById('foto');
         if (fileInput) fileInput.value = '';
-        
-        setFormData({
-          ...formData,
-          foto: null,
-          fotoPreview: null,
-          fotoFile: ''
-        });
-      };
-    
 
+        setFormData({
+            ...formData,
+            foto: null,
+            fotoPreview: null,
+            fotoFile: ''
+        });
+    };
 
     const modalFields = [
         { name: "nombres", label: "Nombres", type: "text" },
@@ -374,7 +412,9 @@ export function TableInstructor() {
                 onSubmit={handleSubmit}
                 title={selectedRow ? "Editar instructor" : "Crear Nuevo instructor"}
                 fields={modalFields}
-                initialData={selectedRow ? { ...selectedRow } : null}
+                onInputChange={handleInputChange} // Pasar la función de manejo
+                minDateForEnd={formData.fecha_inicio} // Para bloquear fechas anteriores
+                maxDateForStart={formData.fecha_finalizacion} // Para bloquear fechas posteriores
             />
             {/* Modal para imagen ampliada */}
             {imagenModal && (
