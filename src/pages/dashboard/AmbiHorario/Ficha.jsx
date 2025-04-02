@@ -32,21 +32,21 @@ export function TableFicha() {
         const newFormData = { ...formData, [name]: value };
 
         // Validación cruzada de fechas
-        if (name === 'fecha_inicio' || name === 'fecha_fin') {
+        if (name === 'fecha_inicio' || name === 'fecha_fin' || name === 'fin_lectiva') {
             const fechaInicio = newFormData.fecha_inicio ? new Date(newFormData.fecha_inicio) : null;
             const fechaFin = newFormData.fecha_fin ? new Date(newFormData.fecha_fin) : null;
+            const finLectiva = newFormData.fin_lectiva ? new Date(newFormData.fin_lectiva) : null;
 
             // Validar que fecha fin no sea anterior a inicio
             if (fechaInicio && fechaFin && fechaFin < fechaInicio) {
-                // Mostrar notificación
                 showNotification('red', 'La fecha fin no puede ser anterior a la fecha inicio');
+                return;
+            }
 
-                // Revertir el cambio si es inválido
-                if (name === 'fecha_fin') {
-                    newFormData.fecha_fin = formData.fecha_fin;
-                } else {
-                    newFormData.fecha_inicio = formData.fecha_inicio;
-                }
+            // Validar que fin lectiva no sea anterior a fecha fin
+            if (fechaFin && finLectiva && finLectiva < fechaFin) {
+                showNotification('red', 'El fin lectiva no puede ser anterior a la fecha fin');
+                return;
             }
 
             // Calcular semanas si ambas fechas son válidas
@@ -132,11 +132,11 @@ export function TableFicha() {
             const startDateInput = document.querySelector("[name='fecha_inicio']");
             const endDateInput = document.querySelector("[name='fecha_fin']");
             const weeksInput = document.querySelector("[name='numero_semanas']");
-    
+
             if (startDateInput && endDateInput && weeksInput) {
                 const startDate = new Date(startDateInput.value);
                 const endDate = new Date(endDateInput.value);
-    
+
                 if (!isNaN(startDate) && !isNaN(endDate) && endDate >= startDate) {
                     const differenceInTime = endDate - startDate;
                     const differenceInWeeks = Math.floor(differenceInTime / (1000 * 60 * 60 * 24 * 7));
@@ -146,15 +146,15 @@ export function TableFicha() {
                 }
             }
         }
-    
+
         document.body.addEventListener("change", function (event) {
             if (event.target.name === "fecha_inicio" || event.target.name === "fecha_fin") {
                 calcularSemanas();
             }
         });
     });
-    
-    
+
+
 
     const showNotification = (type, message) => {
         setNotification({ type, message })
@@ -356,6 +356,7 @@ export function TableFicha() {
                 onInputChange={handleInputChange} // Pasar la función de manejo
                 minDateForEnd={formData.fecha_inicio} // Para bloquear fechas anteriores
                 maxDateForStart={formData.fecha_fin} // Para bloquear fechas posteriores
+                minDateForLectiva={formData.fecha_fin}
             />
             {notification && (
                 <div

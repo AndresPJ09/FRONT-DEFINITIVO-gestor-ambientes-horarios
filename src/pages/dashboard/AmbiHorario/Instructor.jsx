@@ -16,22 +16,14 @@ export function TableInstructor() {
     const [error, setError] = useState(null);
     const [notification, setNotification] = useState(null)
     const [imagenModal, setImagenModal] = useState(null);
-    const [formData, setFormData] = useState({
-        nombres: '',
-        apellidos: '',
-        foto: null,
-        fotoPreview: '',
-        identificacion: '',
-        tipo_vinculacion_id: 0,
-        especialidad: '',
-        correo: '',
-        fecha_inicio: '',
-        fecha_finalizacion: '',
-        hora_ingreso: '',
-        hora_egreso: '',
-        horas_asignadas: 0,
-        estado: true,
-    });
+    const [formData, setFormData] = useState({});
+
+    useEffect(() => {
+        if (isModalOpen) {
+          setFormData(selectedRow || {});
+        }
+      }, [isModalOpen, selectedRow]);
+    
 
     const fetchData = useCallback(async () => {
         setIsLoading(true);
@@ -90,31 +82,6 @@ export function TableInstructor() {
         setTimeout(() => setNotification(null), 5000);
     };
 
-    // Función para manejar cambios en los inputs
-    const handleInputChange = (name, value) => {
-        const newData = { ...formData, [name]: value };
-
-        // Validación cruzada de fechas
-        if (name === 'fecha_inicio' || name === 'fecha_finalizacion') {
-            const fechaInicio = newData.fecha_inicio ? new Date(newData.fecha_inicio) : null;
-            const fechaFin = newData.fecha_finalizacion ? new Date(newData.fecha_finalizacion) : null;
-
-            // Validar que fecha fin no sea anterior a inicio
-            if (fechaInicio && fechaFin && fechaFin < fechaInicio) {
-                showNotification('red', 'La fecha de finalización no puede ser anterior a la fecha de inicio');
-
-                // Revertir el cambio inválido
-                if (name === 'fecha_finalizacion') {
-                    newData.fecha_finalizacion = formData.fecha_finalizacion;
-                } else {
-                    newData.fecha_inicio = formData.fecha_inicio;
-                }
-            }
-        }
-
-        setFormData(newData);
-    };
-
     const handleSubmit = async (formData) => {
         // Validación final de fechas
         const fechaInicio = data.fecha_inicio ? new Date(data.fecha_inicio) : null;
@@ -124,21 +91,10 @@ export function TableInstructor() {
             showNotification('red', 'La fecha de finalización no puede ser anterior a la fecha de inicio');
             return;
         }
-
+        console.log('Datos enviados al submit:', formData);
         try {
             setIsLoading(true);
             setError(null);
-
-            // Verificar si hay una imagen para enviar
-            if (formData.foto && typeof formData.foto === 'string' && formData.foto.length > 0) {
-                // La imagen ya está en Base64, no necesitamos hacer nada
-            } else if (selectedRow?.foto) {
-                // Si estamos editando y no se cambió la imagen, mantener la original
-                formData.foto = selectedRow.foto;
-            } else {
-                // Si no hay imagen, enviar null
-                formData.foto = null;
-            }
 
             if (selectedRow) {
                 await Service.put(`/instructor/${selectedRow.id}/`, formData);
@@ -164,7 +120,7 @@ export function TableInstructor() {
             console.error("Error al guardar:", error);
             Swal.fire({
                 title: "Error al guardar instructor",
-                text: error.response?.data?.message || error.message,
+                text: error,
                 icon: "error",
                 showConfirmButton: false,
                 timer: 1500,
@@ -211,7 +167,29 @@ export function TableInstructor() {
             }
         });
     };
-
+    const handleInputChange = (name, value) => {
+        const newFormData = { ...formData, [name]: value };
+      
+        // Validación para todos los casos posibles de fechas
+        const fechaInicio = newFormData.fecha_inicio ? new Date(newFormData.fecha_inicio) : null;
+        const fechaFin = newFormData.fecha_fin ? new Date(newFormData.fecha_fin) : null;
+        const fechaFinalizacion = newFormData.fecha_finalizacion ? new Date(newFormData.fecha_finalizacion) : null;
+      
+        // Validar fecha_fin vs fecha_inicio
+        if (fechaInicio && fechaFin && fechaFin < fechaInicio) {
+          showNotification('red', 'La fecha fin no puede ser anterior a la fecha inicio');
+          return;
+        }
+      
+        // Validar fecha_finalizacion vs fecha_inicio
+        if (fechaInicio && fechaFinalizacion && fechaFinalizacion < fechaInicio) {
+          showNotification('red', 'La fecha de finalización no puede ser anterior a la fecha de inicio');
+          return;
+        }
+      
+        setFormData(newFormData);
+        if (onInputChange) onInputChange(name, value);
+      };
 
     const handleFileChange = (e) => {
         const file = e.target.files[0];
@@ -273,8 +251,15 @@ export function TableInstructor() {
             ...formData,
             foto: null,
             fotoPreview: null,
-            fotoFile: ''
+            fotoFile: '',
+            shouldDeleteImage: true,
         });
+
+        console.log('Estado después de eliminar imagen:', {
+            foto: null,
+            shouldDeleteImage: true
+        });
+
     };
 
     const modalFields = [
@@ -301,8 +286,8 @@ export function TableInstructor() {
         },
         { name: "tipo_vinculacion_id", label: "ID del tipo de vinculo", type: "select", options: dataTipoVinculo },
         { name: "especialidad", label: "Especialidad", type: "text" },
-        { name: "fecha_inicio", label: "FechaInicio", type: "date" },
-        { name: "fecha_finalizacion", label: "FechaFin", type: "date" },
+        { name: "fecha_inicio", label: "FechaInicio", type: "date", minDate: formData.fecha_inicio  },
+        { name: "fecha_finalizacion", label: "FechaFin", type: "date", maxDate: formData.fecha_finalizacion },
         { name: "hora_ingreso", label: "HorasIngreso", type: "time" },
         { name: "hora_egreso", label: "HorasEgreso", type: "time" },
         { name: "horas_asignadas", label: "HorasAsignadas", type: "number" },
@@ -412,9 +397,10 @@ export function TableInstructor() {
                 onSubmit={handleSubmit}
                 title={selectedRow ? "Editar instructor" : "Crear Nuevo instructor"}
                 fields={modalFields}
-                onInputChange={handleInputChange} // Pasar la función de manejo
-                minDateForEnd={formData.fecha_inicio} // Para bloquear fechas anteriores
-                maxDateForStart={formData.fecha_finalizacion} // Para bloquear fechas posteriores
+                initialData={formData}
+                onInputChange={handleInputChange}
+                minDateForEnd={formData.fecha_inicio}
+                maxDateForStart={formData.fecha_finalizacion}
             />
             {/* Modal para imagen ampliada */}
             {imagenModal && (

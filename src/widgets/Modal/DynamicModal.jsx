@@ -1,7 +1,6 @@
 "use client";
-
-import { DialogFooter } from "@/components/ui/dialog";
 import { useState, useEffect } from "react";
+import { DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -10,23 +9,43 @@ import { Textarea } from "@/components/ui/textarea";
 import { DatePicker } from "./DatePicker";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-export function DynamicModal({ isOpen, onClose, onSubmit, title, fields, initialData, onInputChange, minDateForEnd,
-  maxDateForStart }) {
+export function DynamicModal({
+  isOpen,
+  onClose,
+  onSubmit,
+  title,
+  fields,
+  initialData,
+  onInputChange,
+  minDateForEnd,
+  maxDateForStart,
+  minDateForLectiva
+}) {
   const [formData, setFormData] = useState({});
-  const [fileInputs, setFileInputs] = useState({});
+  const [filePreviews, setFilePreviews] = useState({});
 
   useEffect(() => {
-    setFormData(initialData || {});
-    // Inicializar fileInputs para campos de tipo file
-    const fileFields = fields.filter(f => f.type === 'file');
-    const inputs = {};
-    fileFields.forEach(field => {
-      inputs[field.name] = null;
-    });
-    setFileInputs(inputs);
+    if (initialData) {
+      // Inicializar formData con los datos iniciales
+      const initialFormData = { ...initialData };
+
+      // Procesar campos de archivo para crear vistas previas
+      const previews = {};
+      fields.filter(f => f.type === 'file').forEach(field => {
+        if (initialData[field.name]) {
+          previews[field.name] = `data:image/jpeg;base64,${initialData[field.name]}`;
+        }
+      });
+
+      setFormData(initialFormData);
+      setFilePreviews(previews);
+    } else {
+      setFormData({});
+      setFilePreviews({});
+    }
   }, [isOpen, initialData, fields]);
 
-  const handleFileChange = async (name, event) => {
+  const handleFileChange = (name, event) => {
     const file = event.target.files[0];
     if (!file) return;
 
@@ -52,25 +71,33 @@ export function DynamicModal({ isOpen, onClose, onSubmit, title, fields, initial
       const base64String = reader.result.split(',')[1];
       setFormData(prev => ({
         ...prev,
-        [name]: base64String,
-        [`${name}Preview`]: URL.createObjectURL(file)
+        [name]: base64String
       }));
-      setFileInputs(prev => ({
+      setFilePreviews(prev => ({
         ...prev,
-        [name]: file
+        [name]: URL.createObjectURL(file)
       }));
     };
     reader.readAsDataURL(file);
   };
 
-  const handleFieldChange = (name, value) => {
-    const newData = { ...formData, [name]: value };
-    setFormData(newData);
-    if (onInputChange) onInputChange(name, value);
+  const handleRemoveImage = (fieldName) => {
+    setFormData(prev => ({
+      ...prev,
+      [fieldName]: null
+    }));
+    setFilePreviews(prev => ({
+      ...prev,
+      [fieldName]: null
+    }));
+    // Limpiar input file
+    const fileInput = document.getElementById(fieldName);
+    if (fileInput) fileInput.value = '';
   };
 
   const handleInputChange = (name, value) => {
     setFormData(prev => ({ ...prev, [name]: value }));
+    if (onInputChange) onInputChange(name, value);
   };
 
   const handleSubmit = (e) => {
@@ -79,7 +106,8 @@ export function DynamicModal({ isOpen, onClose, onSubmit, title, fields, initial
   };
 
   const renderField = (field) => {
-    const value = formData[field.name] || "";
+    const value = formData[field.name] ?? "";
+    const filePreview = filePreviews[field.name];
 
     switch (field.type) {
       case "textarea":
@@ -122,8 +150,8 @@ export function DynamicModal({ isOpen, onClose, onSubmit, title, fields, initial
             </Select>
           </div>
         );
-        
 
+      // En DynamicModal.jsx, actualizar el case "date":
       case "date":
         return (
           <div key={field.name} className="grid gap-1">
@@ -131,39 +159,54 @@ export function DynamicModal({ isOpen, onClose, onSubmit, title, fields, initial
             <div className="mt-1">
               <DatePicker
                 value={value}
-                onChange={(date) => handleFieldChange(field.name, date)}
+                onChange={(date) => handleInputChange(field.name, date)}
                 placeholder={field.label}
-                minDate={field.name === 'fecha_fin' ? minDateForEnd : undefined}
-                maxDate={field.name === 'fecha_inicio' ? maxDateForStart : undefined}
+                minDate={
+                  field.name === 'fecha_fin' || field.name === 'fecha_finalizacion' ?
+                    (minDateForEnd ? new Date(minDateForEnd) : undefined) :
+                    field.name === 'fin_lectiva' ?
+                      (minDateForLectiva ? new Date(minDateForLectiva) : undefined) :
+                      undefined
+                }
+                maxDate={
+                  field.name === 'fecha_inicio' ?
+                    (maxDateForStart ? new Date(maxDateForStart) : undefined) :
+                    undefined
+                }
               />
             </div>
           </div>
         );
+      case "file":
+        return (
+          <div key={field.name} className="grid gap-2">
+            <Label htmlFor={field.name}>{field.label}</Label>
+            <Input
+              id={field.name}
+              type="file"
+              accept={field.accept}
+              onChange={(e) => handleFileChange(field.name, e)}
+            />
+            {(filePreview || value) && (
+              <div className="mt-2 space-y-2">
+                <img
+                  src={filePreview || `data:image/jpeg;base64,${value}`}
+                  alt="Preview"
+                  className="h-24 w-24 object-cover rounded-md"
+                />
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => handleRemoveImage(field.name)}
+                >
+                  Eliminar imagen
+                </Button>
+              </div>
+            )}
+          </div>
+        );
 
-        case "file":
-          return (
-            <div key={field.name} className="grid gap-2">
-              <Label htmlFor={field.name}>{field.label}</Label>
-              <Input
-                id={field.name}
-                type="file"
-                accept={field.accept}
-                onChange={(e) => handleFileChange(field.name, e)}
-              />
-              {formData[`${field.name}Preview`] && (
-                <div className="mt-2">
-                  <img 
-                    src={formData[`${field.name}Preview`]} 
-                    alt="Preview" 
-                    className="h-24 w-24 object-cover rounded-md"
-                  />
-                  {field.extraContent}
-                </div>
-              )}
-            </div>
-          );
-        
-      // En el switch case para el tipo "number":
       default:
         return (
           <div key={field.name} className="grid gap-2">
@@ -173,8 +216,8 @@ export function DynamicModal({ isOpen, onClose, onSubmit, title, fields, initial
               type={field.type}
               value={value}
               onChange={(e) => handleInputChange(field.name, e.target.value)}
-              readOnly={field.readOnly} // Añade esta línea
-              className={field.className} // Añade esta línea
+              readOnly={field.readOnly}
+              className={field.className}
             />
           </div>
         );
