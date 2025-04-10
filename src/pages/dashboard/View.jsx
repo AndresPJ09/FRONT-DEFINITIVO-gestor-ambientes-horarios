@@ -236,4 +236,8 @@ export function TableView() {
   )
 }
 
+<<<<<<< HEAD
 export default TableView
+=======
+export default TableView
+>>>>>>> b9796160d52df085a4256b95b573838dd7c70056
