@@ -1,13 +1,16 @@
-"use client";
+"use client"
 
-import { useState, useEffect, useCallback } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import DataTableComponent from "@/widgets/datatable/data-table";
-import { Service } from "@/data/api";
-import { CheckIcon, PlusIcon, TrashIcon } from "lucide-react";
-import { DynamicModal } from "@/widgets/Modal/DynamicModal";
-import Swal from "sweetalert2";
+import { useState, useEffect, useCallback } from "react"
+import {
+  Button,
+} from "@material-tailwind/react"
+import DataTableComponent from "@/widgets/datatable/data-table"
+import { Service } from "@/data/api"
+import { CheckIcon } from "@heroicons/react/24/solid"
+import { DynamicModal } from "@/widgets/Modal/DynamicModal"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { PlusIcon, TrashIcon } from "lucide-react"
+import Swal2 from "sweetalert2"
 
 export function TableAmbiente() {
   const [data, setData] = useState([]);
@@ -15,7 +18,6 @@ export function TableAmbiente() {
   const [selectedRow, setSelectedRow] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [notification, setNotification] = useState(null)
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -36,6 +38,85 @@ export function TableAmbiente() {
     fetchData();
   }, [fetchData]);
 
+  const showSwal = (type, title, message = "", timer = 1500) => {
+    Swal2.fire({
+      icon: type,
+      title: title,
+      text: message,
+      showConfirmButton: false,
+      timer: timer,
+      timerProgressBar: true,
+      position: "top-end",
+      toast: true,
+    })
+  }
+
+  const handleSubmit = async (formData) => {
+    try {
+      if (!selectedRow) {
+        formData.estado = true;
+      }
+  
+      if (selectedRow) {
+        await Service.put(`/ambiente/${selectedRow.id}/`, formData);
+      } else {
+        await Service.post("/ambiente/", formData);
+      }
+      fetchData()
+      setIsModalOpen(false)
+      setSelectedRow(null)
+      showSwal("success", "Ambiente guardado exitosamente")
+    } catch (error) {
+      console.error("Error al guardar el ambiente:", error)
+
+      // Verifica si viene una respuesta con errores del backend
+      const backendError = error?.response?.data
+
+      // Extrae los mensajes y los convierte a texto plano
+      let errorMessage = "Por favor, inténtalo de nuevo más tarde."
+      if (backendError) {
+        if (typeof backendError === "string") {
+          errorMessage = backendError
+        } else if (Array.isArray(backendError.detail)) {
+          errorMessage = backendError.detail.map((e) => e.msg || e).join("\n")
+        } else if (backendError.detail) {
+          errorMessage = backendError.detail
+        } else {
+          // Si es un objeto de campos
+          errorMessage = Object.entries(backendError)
+            .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(", ") : value}`)
+            .join("\n")
+        }
+      }
+      showSwal("error", "Error al guardar el ambiente", errorMessage)
+    }
+  }
+
+  const handleDelete = async (row) => {
+    Swal2.fire({
+      title: "¿Estás seguro de eliminar este ambiente?",
+      text: "Esta acción no se puede deshacer.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar",
+      reverseButtons: true,
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          await Service.delete(`/ambiente/${row.id}/`)
+          showSwal("success", "Ambiente eliminado correctamente")
+          fetchData()
+        } catch (error) {
+          console.error("Error al eliminar el ambiente:", error)
+          showSwal("error", "Error al eliminar el ambiente", "Inténtalo de nuevo más tarde.")
+        }
+      }
+    })
+  }
+
   const handleAction = (row) => {
     setSelectedRow(row);
     setIsModalOpen(true);
@@ -46,88 +127,32 @@ export function TableAmbiente() {
     setSelectedRow(null);
   };
 
-  const handleSubmit = async (formData) => {
-    try {
-      setIsLoading(true);
-      setError(null);
-
-      if (selectedRow) {
-        await Service.put(`/ambiente/${selectedRow.id}/`, formData);
-        Swal.fire({
-          title: "Ambiente actualizado",
-          icon: "success",
-          showConfirmButton: false,
-          timer: 1500,
-        });
-      } else {
-        await Service.post("/ambiente/", { ...formData, estado: true });
-        Swal.fire({
-          title: "Ambiente creado",
-          icon: "success",
-          showConfirmButton: false,
-          timer: 1500,
-        });
-      }
-
-      await fetchData();
-      handleCloseModal();
-    } catch (error) {
-      Swal.fire({
-        title: "Error al guardar el ambiente",
-        text: error,
-        icon: "error",
-        showConfirmButton: false,
-        timer: 1500,
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleDelete = async (row) => {
-    try {
-      Swal.fire({
-        title: "¿Estás seguro de eliminar este ambiente?",
-        text: "Esta acción no se puede deshacer.",
-        icon: "warning",
-        showCancelButton: true,
-        confirmButtonColor: "#d33",
-        cancelButtonColor: "#3085d6",
-        confirmButtonText: "Sí, eliminar",
-        cancelButtonText: "Cancelar",
-        reverseButtons: true,
-      }).then(async (result) => {
-        if (result.isConfirmed) {
-          await Service.delete(`/ambiente/${row.id}/`);
-          Swal.fire({
-            title: "Ambiente eliminado",
-            icon: "success",
-            showConfirmButton: false,
-            timer: 1500,
-          });
-          // Actualiza el estado manualmente
-          await fetchData()
-        }
-      });
-    } catch (error) {
-      Swal.fire({
-        title: "Error al eliminar el ambiente",
-        text: error.message || "Ocurrió un error inesperado",
-        icon: "error",
-        showConfirmButton: false,
-        timer: 1500,
-      });
-    }
-  };
-
   const modalFields = [
-    { name: "codigo", label: "Código", type: "text" },
-    { name: "nombre", label: "Nombre", type: "text" },
-    { name: "capacidad", label: "Capacidad", type: "number" },
+    {
+      label: "Código",
+      name: "codigo",
+      type: "text",
+      required: true,
+      value: selectedRow?.codigo || "",
+    },
+    {
+      label: "Nombre",
+      name: "nombre",
+      type: "text",
+      required: true,
+      value: selectedRow?.nombre || "",
+    },
+    {
+      label: "Capacidad",
+      name: "capacidad",
+      type: "number",
+      required: true,
+      value: selectedRow?.capacidad || "",
+    },
     selectedRow
       ? {
-        name: "estado",
         label: "Estado",
+        name: "estado",
         type: "select",
         options: [
           { value: true, label: "Activo" },
@@ -138,15 +163,23 @@ export function TableAmbiente() {
   ].filter(Boolean);
 
   const columns = [
-    { name: "codigo", selector: (row) => row.codigo, sortable: true,},
-    { name: "nombre", selector: (row) => row.nombre, sortable: true,},
     {
-      name: "capacidad",
+      name: "Código",
+      selector: (row) => row.codigo,
+      sortable: true,
+    },
+    {
+      name: "Nombre",
+      selector: (row) => row.nombre,
+      sortable: true,
+    },
+    {
+      name: "Capacidad",
       selector: (row) => row.capacidad,
       sortable: true,
     },
     {
-      name: "estado",
+      name: "Estado",
       selector: (row) => (row.estado ? "Activo" : "Inactivo"),
       sortable: true,
     },
@@ -154,20 +187,10 @@ export function TableAmbiente() {
       name: "Acciones",
       cell: (row) => (
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex items-center bg-green-500 text-white hover:bg-green-500 hover:bg-opacity-80 gap-2"
-            onClick={() => handleAction(row)}
-          >
+          <Button color="green" size="sm" className="flex items-center gap-2" onClick={() => handleAction(row)}>
             <CheckIcon className="h-4 w-4" />
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex items-center bg-red-500 text-white hover:bg-red-500 hover:bg-opacity-80 gap-2"
-            onClick={() => handleDelete(row)}
-          >
+          <Button color="red" size="sm" className="flex items-center gap-2" onClick={() => handleDelete(row)}>
             <TrashIcon className="h-4 w-4" />
           </Button>
         </div>
@@ -177,7 +200,7 @@ export function TableAmbiente() {
       button: true,
       width: "150px",
     },
-  ];
+  ]
 
   return (
     <div className="mt-6 mb-8 space-y-6 bg-gradient-to-br from-blue-gray-50 mt-12 rounded-xl min-h-screen via-white to-white">
@@ -188,10 +211,13 @@ export function TableAmbiente() {
             variant="default"
             size="sm"
             className="flex items-center gap-2"
-            onClick={() => setIsModalOpen(true)}
+            onClick={() => {
+              setSelectedRow(null)
+              setIsModalOpen(true)
+            }}
           >
             <PlusIcon className="h-4 w-4" />
-            Agregar Nuevo Ambiente
+            Agregar nuevo ambiente
           </Button>
         </CardHeader>
         <CardContent>
@@ -202,6 +228,7 @@ export function TableAmbiente() {
           )}
         </CardContent>
       </Card>
+
       <DynamicModal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
@@ -210,14 +237,6 @@ export function TableAmbiente() {
         fields={modalFields}
         initialData={selectedRow ? { ...selectedRow } : null}
       />
-      {notification && (
-        <div
-          className={`fixed top-10 right-4 p-4 rounded-lg text-white ${notification.type === "green" ? "bg-green-500" : "bg-red-500"
-            } transition-opacity duration-500 ${notification ? "opacity-100" : "opacity-0"}`}
-        >
-          {notification.message}
-        </div>
-      )}
     </div>
   );
 }

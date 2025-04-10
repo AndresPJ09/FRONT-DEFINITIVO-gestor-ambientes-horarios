@@ -1,12 +1,16 @@
-"use client";
-import { useState, useEffect, useCallback } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import DataTableComponent from "@/widgets/datatable/data-table";
-import { Service } from "@/data/api";
-import { CheckIcon, PlusIcon, TrashIcon } from "lucide-react";
-import { DynamicModal } from "@/widgets/Modal/DynamicModal";
-import Swal from "sweetalert2";
+"use client"
+
+import { useState, useEffect, useCallback } from "react"
+import {
+  Button,
+} from "@material-tailwind/react"
+import DataTableComponent from "@/widgets/datatable/data-table"
+import { Service } from "@/data/api"
+import { CheckIcon } from "@heroicons/react/24/solid"
+import { DynamicModal } from "@/widgets/Modal/DynamicModal"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { PlusIcon, TrashIcon } from "lucide-react"
+import Swal2 from "sweetalert2"
 
 export function TablePeriodo() {
   const [data, setData] = useState([]);
@@ -43,16 +47,18 @@ export function TablePeriodo() {
     fetchData();
   }, [fetchData]);
 
-  const handleAction = (row) => {
-    setSelectedRow(row);
-    setIsModalOpen(true);
-  };
-
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setSelectedRow(null);
-    setFormData({});
-  };
+  const showSwal = (type, title, message = "", timer = 1500) => {
+    Swal2.fire({
+      icon: type,
+      title: title,
+      text: message,
+      showConfirmButton: false,
+      timer: timer,
+      timerProgressBar: true,
+      position: "top-end",
+      toast: true,
+    })
+  }
 
   const showNotification = (type, message) => {
     setNotification({ type, message });
@@ -69,7 +75,7 @@ export function TablePeriodo() {
 
       if (fechaInicio && fechaFin && fechaFin < fechaInicio) {
         showNotification('red', 'La fecha fin no puede ser anterior a la fecha inicio');
-        
+
         // Revertir el cambio inválido
         if (name === 'fecha_fin') {
           newFormData.fecha_fin = formData.fecha_fin;
@@ -82,13 +88,13 @@ export function TablePeriodo() {
     setFormData(newFormData);
   };
 
-  const handleSubmit = async () => {
-    // Validación final antes de enviar
+  const handleSubmit = async (formData) => {
+    // Validación de fechas
     const fechaInicio = formData.fecha_inicio ? new Date(formData.fecha_inicio) : null;
     const fechaFin = formData.fecha_fin ? new Date(formData.fecha_fin) : null;
 
     if (fechaInicio && fechaFin && fechaFin < fechaInicio) {
-      showNotification('red', 'La fecha fin no puede ser anterior a la fecha inicio');
+      showSwal("error", "Error en las fechas", "La fecha fin no puede ser anterior a la fecha inicio");
       return;
     }
 
@@ -96,50 +102,123 @@ export function TablePeriodo() {
       setIsLoading(true);
       setError(null);
 
-      if (selectedRow) {
-        await Service.put(`/periodo/${selectedRow.id}/`, formData);
-        Swal.fire("Periodo actualizado", "", "success");
-      } else {
-        await Service.post("/periodo/", { ...formData, estado: true });
-        Swal.fire("Periodo creado", "", "success");
+      if (!selectedRow) {
+        formData.estado = true;
       }
 
-      await fetchData();
-      handleCloseModal();
+      if (selectedRow) {
+        await Service.put(`/periodo/${selectedRow.id}/`, formData);
+      } else {
+        await Service.post("/periodo/", formData);
+      }
+      fetchData()
+      setIsModalOpen(false)
+      setSelectedRow(null)
+      showSwal("success", "Periodo guardado exitosamente")
     } catch (error) {
-      Swal.fire("Error al guardar", error.message, "error");
-    } finally {
-      setIsLoading(false);
+      console.error("Error al guardar el periodo:", error)
+
+      // Verifica si viene una respuesta con errores del backend
+      const backendError = error?.response?.data
+
+      // Extrae los mensajes y los convierte a texto plano
+      let errorMessage = "Por favor, inténtalo de nuevo más tarde."
+      if (backendError) {
+        if (typeof backendError === "string") {
+          errorMessage = backendError
+        } else if (Array.isArray(backendError.detail)) {
+          errorMessage = backendError.detail.map((e) => e.msg || e).join("\n")
+        } else if (backendError.detail) {
+          errorMessage = backendError.detail
+        } else {
+          // Si es un objeto de campos
+          errorMessage = Object.entries(backendError)
+            .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(", ") : value}`)
+            .join("\n")
+        }
+      }
+      showSwal("error", "Error al guardar el periodo", errorMessage)
     }
+  }
+
+  const handleDelete = async (row) => {
+    Swal2.fire({
+      title: "¿Estás seguro de eliminar este ambiente?",
+      text: "Esta acción no se puede deshacer.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar",
+      reverseButtons: true,
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          await Service.delete(`/periodo/${row.id}/`)
+          showSwal("success", "Periodo eliminado correctamente")
+          fetchData()
+        } catch (error) {
+          console.error("Error al eliminar el periodo:", error)
+          showSwal("error", "Error al eliminar el periodo", "Inténtalo de nuevo más tarde.")
+        }
+      }
+    })
+  }
+
+  const handleAction = (row) => {
+    setSelectedRow(row);
+    setIsModalOpen(true);
   };
 
-  // Corregir campos del modal (eliminé el duplicado de fecha_inicio)
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedRow(null);
+    setFormData({});
+  };
+
   const modalFields = [
-    { name: "nombre", label: "Nombre", type: "text" },
-    { 
-      name: "fecha_inicio", 
-      label: "Fecha inicio", 
-      type: "date",
-      minDate: null, // Puedes establecer una fecha mínima global si es necesario
-      maxDate: formData.fecha_fin // Bloquear fechas posteriores a fecha_fin
+    {
+      label: "Nombre",
+      name: "nombre",
+      type: "text",
+      required: true,
+      value: selectedRow?.nombre || "",
     },
-    { 
-      name: "fecha_fin", 
-      label: "Fecha fin", 
+    {
+      label: "Fecha inicio",
+      name: "fecha_inicio",
       type: "date",
-      minDate: formData.fecha_inicio // Bloquear fechas anteriores a fecha_inicio
+      required: true,
+      value: selectedRow?.fecha_inicio || "",
+      minDate: null,
+      maxDate: formData.fecha_fin
     },
-    { name: "ano", label: "Año", type: "number" },
+    {
+      label: "Fecha fin",
+      name: "fecha_fin",
+      type: "date",
+      required: true,
+      value: selectedRow?.fecha_fin || "",
+      minDate: formData.fecha_inicio
+    },
+    {
+      label: "Año",
+      name: "ano",
+      type: "number",
+      required: true,
+      value: selectedRow?.ano || "",
+    },
     selectedRow
       ? {
-          name: "estado",
-          label: "Estado",
-          type: "select",
-          options: [
-            { value: true, label: "Activo" },
-            { value: false, label: "Inactivo" },
-          ],
-        }
+        label: "Estado",
+        name: "estado",
+        type: "select",
+        options: [
+          { value: true, label: "Activo" },
+          { value: false, label: "Inactivo" },
+        ],
+      }
       : null,
   ].filter(Boolean);
 
@@ -157,20 +236,10 @@ export function TablePeriodo() {
       name: "Acciones",
       cell: (row) => (
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex items-center bg-green-500 text-white hover:bg-green-500 hover:bg-opacity-80 gap-2"
-            onClick={() => handleAction(row)}
-          >
+          <Button color="green" size="sm" className="flex items-center gap-2" onClick={() => handleAction(row)}>
             <CheckIcon className="h-4 w-4" />
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex items-center bg-red-500 text-white hover:bg-red-500 hover:bg-opacity-80 gap-2"
-            onClick={() => handleDelete(row)}
-          >
+          <Button color="red" size="sm" className="flex items-center gap-2" onClick={() => handleDelete(row)}>
             <TrashIcon className="h-4 w-4" />
           </Button>
         </div>
@@ -180,7 +249,7 @@ export function TablePeriodo() {
       button: true,
       width: "150px",
     },
-  ];
+  ]
 
   return (
     <div className="mt-6 mb-8 space-y-6 bg-gradient-to-br from-blue-gray-50 mt-12 rounded-xl min-h-screen via-white to-white">
@@ -191,7 +260,10 @@ export function TablePeriodo() {
             variant="default"
             size="sm"
             className="flex items-center gap-2"
-            onClick={() => setIsModalOpen(true)}
+            onClick={() => {
+              setSelectedRow(null)
+              setIsModalOpen(true)
+            }}
           >
             <PlusIcon className="h-4 w-4" />
             Agregar Nuevo
@@ -216,17 +288,8 @@ export function TablePeriodo() {
         minDateForEnd={formData.fecha_inicio}
         maxDateForStart={formData.fecha_fin}
       />
-      {notification && (
-        <div
-          className={`fixed top-10 right-4 p-4 rounded-lg text-white ${notification.type === "green" ? "bg-green-500" : "bg-red-500"
-            } transition-opacity duration-500 ${notification ? "opacity-100" : "opacity-0"}`}
-        >
-          {notification.message}
-        </div>
-      )}
     </div>
   );
 }
-    
-    export default TablePeriodo;
-    
+
+export default TablePeriodo;

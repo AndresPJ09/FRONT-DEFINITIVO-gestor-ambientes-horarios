@@ -1,23 +1,24 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Button,
+} from "@material-tailwind/react"
 import DataTableComponent from "@/widgets/datatable/data-table"
 import { Service } from "@/data/api"
-import { CheckIcon, PlusIcon, TrashIcon } from "lucide-react"
+import { CheckIcon } from "@heroicons/react/24/solid"
 import { DynamicModal } from "@/widgets/Modal/DynamicModal"
-import Swal from "sweetalert2"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { PlusIcon, TrashIcon } from "lucide-react"
+import Swal2 from "sweetalert2"
 
 export function TableUser() {
   const [data, setData] = useState([])
-  const [tipoDocumento, setTipoDocumento] = useState([])
+  const [DatatipoDocumento, setDatatipoDocumento] = useState([])
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedRow, setSelectedRow] = useState(null)
-  
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [notification, setNotification] = useState(null)
 
   const fetchData = useCallback(async () => {
     setIsLoading(true)
@@ -37,15 +38,14 @@ export function TableUser() {
   const fetchTipoDocumento = async () => {
     try {
       const response = await Service.get("/tipodocumento/")
-
-      setTipoDocumento(response.map((item) => ({
+      setDatatipoDocumento(response.map((item) => ({
         value: item.id,
         label: item.nombre,
       }))
       )
     } catch (error) {
       console.error("Error al obtener los tipos de documento:", error)
-      setTipoDocumento([])
+      setDatatipoDocumento([])
     }
   }
 
@@ -53,6 +53,81 @@ export function TableUser() {
     fetchData()
     fetchTipoDocumento()
   }, [fetchData])
+
+  const showSwal = (type, title, message = "", timer = 1500) => {
+    Swal2.fire({
+      icon: type,
+      title: title,
+      text: message,
+      showConfirmButton: false,
+      timer: timer,
+      timerProgressBar: true,
+      position: "top-end",
+      toast: true,
+    })
+  }
+
+  const handleSubmit = async (formData) => {
+    try {
+      if (selectedRow) {
+        await Service.put(`/usuario/${selectedRow.id}/`, formData)
+      } else {
+        await Service.post("/usuario/", formData)
+      }
+      fetchData()
+      setIsModalOpen(false)
+      setSelectedRow(null)
+      showSwal("success", "Usuario guardado exitosamente")
+    } catch (error) {
+      console.error("Error al guardar el usuario:", error)
+
+      // Verifica si viene una respuesta con errores del backend
+      const backendError = error?.response?.data
+
+      // Extrae los mensajes y los convierte a texto plano
+      let errorMessage = "Por favor, inténtalo de nuevo más tarde."
+      if (backendError) {
+        if (typeof backendError === "string") {
+          errorMessage = backendError
+        } else if (Array.isArray(backendError.detail)) {
+          errorMessage = backendError.detail.map((e) => e.msg || e).join("\n")
+        } else if (backendError.detail) {
+          errorMessage = backendError.detail
+        } else {
+          // Si es un objeto de campos
+          errorMessage = Object.entries(backendError)
+            .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(", ") : value}`)
+            .join("\n")
+        }
+      }
+      showSwal("error", "Error al guardar el usuario", errorMessage)
+    }
+  }
+
+  const handleDelete = async (row) => {
+    Swal2.fire({
+      title: "¿Estás seguro de eliminar este usuario?",
+      text: "Esta acción no se puede deshacer.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar",
+      reverseButtons: true,
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          await Service.delete(`/usuario/${row.id}/`)
+          showSwal("success", "Usuario eliminado correctamente")
+          fetchData()
+        } catch (error) {
+          console.error("Error al eliminar el usuario:", error)
+          showSwal("error", "Error al eliminar el usuario", "Inténtalo de nuevo más tarde.")
+        }
+      }
+    })
+  }
 
   const handleAction = (row) => {
     setSelectedRow(row)
@@ -63,96 +138,51 @@ export function TableUser() {
     setIsModalOpen(false)
     setSelectedRow(null)
   }
-  
-  const showNotification = (type, message) => {
-    setNotification({ type, message })
-    setTimeout(() => setNotification(null), 5000)
-  }
-
-
-  const handleSubmit = async (formData) => {
-    try {
-      setIsLoading(true)
-      setError(null)
-      if (selectedRow) {
-        await Service.put(`/usuario/${selectedRow.id}/`, formData)
-
-        Swal.fire({
-            title: "Usuario actualizado",
-            icon: "success",
-            showConfirmButton: false,
-            timer: 1500,
-        })
-      } else {
-        await Service.post("/usuario/", formData, {
-estado : false,
-        })
-
-        Swal.fire({
-            title: "Usuario creado",
-            icon: "success",
-            showConfirmButton: false,
-            timer: 1500,
-        })
-
-      }
-      await fetchData()
-      handleCloseModal()
-    } catch (error) {
-        Swal.fire({
-            title: "Error al guardar el usuario",
-            text: error,
-            icon: "error",
-            showConfirmButton: false,
-            timer: 1500,
-        })
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handleDelete = async (row) => {
-    try {
-        Swal.fire({
-            title: "¿Estás seguro de eliminar este usuario?",
-            text: "Esta acción no se puede deshacer.",
-            icon: "warning",
-            showCancelButton: true,
-            confirmButtonColor: "#d33",
-            cancelButtonColor: "#3085d6",
-            confirmButtonText: "Sí, eliminar",
-            cancelButtonText: "Cancelar",
-            reverseButtons: true,
-        }).then(async (result) => {
-            if (result.isConfirmed) {
-                await Service.delete(`/usuario/${row.id}/`)
-                Swal.fire({
-                    title: "Usuario eliminado",
-                    icon: "success",   
-                    showConfirmButton: false,
-                    timer: 1500,
-                })
-                await fetchData()
-            }
-        })
-    } catch (error) {
-        Swal.fire({
-            title: "Error al eliminar el usuarioa",
-            text: error,
-            icon: "error",
-            showConfirmButton: false,
-            timer: 1500,
-        })
-    }
-  }
 
   const modalFields = [
-    { name: "nombres", label: "Nombres", type: "text" },
-    { name: "apellidos", label: "Apellidos", type: "text" },
-    { name: "correo", label: "Correo electronico", type: "email" },
-    { name: "contrasena", label: "Contraseña", type: "password" },
-    { name : "documento", label: "Numero de documento", type: "number"},
-    { name: "tipoDocumento", label: "ID del tipo de documento", type: "select", options: tipoDocumento },
+    {
+      label: "Nombres",
+      name: "nombres",
+      type: "text",
+      required: true,
+      value: selectedRow?.nombre || "",
+    },
+    {
+      label: "Apellidos",
+      name: "apellidos",
+      type: "text",
+      required: true,
+      value: selectedRow?.apellidos || "",
+    },
+    {
+      label: "Correo electronico",
+      name: "correo",
+      type: "email",
+      required: true,
+      value: selectedRow?.correo || "",
+    },
+    {
+      label: "Contraseña",
+      name: "contrasena",
+      type: "password",
+      required: true,
+      value: selectedRow?.contrasena || "",
+    },
+    {
+      label: "Documento",
+      name: "documento",
+      type: "number",
+      required: true,
+      value: selectedRow?.documento || "",
+    },
+    {
+      label: "Tipo de documento",
+      name: "tipoDocumento",
+      type: "select",
+      required: true,
+      value: selectedRow?.tipoDocumento || "",
+      options: DatatipoDocumento
+    },
   ]
 
   const columns = [
@@ -173,30 +203,30 @@ estado : false,
       sortable: true,
     },
     {
-        name: "Correo electronico",
-        selector: (row) => row.correo,
-        sortable: true,
-      },
+      name: "Correo electronico",
+      selector: (row) => row.correo,
+      sortable: true,
+    },
     {
       name: "Documento",
       selector: (row) => row.documento,
       sortable: true,
     },
     {
-        name: "Tipo de documento",
-        selector: (row) => tipoDocumento.find((item) => item.value === row.tipoDocumento)?.label,
-        sortable: true,
-      },
-      
+      name: "Tipo de documento",
+      selector: (row) => DatatipoDocumento.find((item) => item.value === row.tipoDocumento)?.label,
+      sortable: true,
+    },
+
     {
       name: "Acciones",
       cell: (row) => (
         <div className="flex items-center gap-2">
-        <Button variant="outline" size="sm" className="flex items-center bg-green-500 text-white hover:bg-green-500 hover:bg-opacity-80 gap-2 " onClick={() => handleAction(row)}>
-              <CheckIcon className="h-4 w-4" />
+          <Button color="green" size="sm" className="flex items-center gap-2" onClick={() => handleAction(row)}>
+            <CheckIcon className="h-4 w-4" />
           </Button>
-        <Button variant="outline" size="sm" className="flex items-center bg-red-500 text-white hover:bg-red-500 hover:bg-opacity-80 gap-2 " onClick={() => handleDelete(row)}>
-              <TrashIcon className="h-4 w-4" />
+          <Button color="red" size="sm" className="flex items-center gap-2" onClick={() => handleDelete(row)}>
+            <TrashIcon className="h-4 w-4" />
           </Button>
         </div>
       ),
@@ -212,7 +242,15 @@ estado : false,
       <Card className="bg-gradient-to-br from-blue-gray-50 rounded-xl min-h-screen via-white to-white">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-2xl font-bold">Gestión de Usuarios</CardTitle>
-          <Button variant="default" size="sm" className="flex items-center gap-2" onClick={() => setIsModalOpen(true)}>
+          <Button
+            variant="default"
+            size="sm"
+            className="flex items-center gap-2"
+            onClick={() => {
+              setSelectedRow(null)
+              setIsModalOpen(true)
+            }}
+          >
             <PlusIcon className="h-4 w-4" />
             Agregar Nuevo Usuario
           </Button>
@@ -233,21 +271,11 @@ estado : false,
         fields={modalFields}
         initialData={selectedRow ? { ...selectedRow } : null}
       />
-      {notification && (
-        <div
-          className={`fixed top-10 right-4 p-4 rounded-lg text-white ${
-            notification.type === "green" ? "bg-green-500" : "bg-red-500"
-          } transition-opacity duration-500 ${notification ? "opacity-100" : "opacity-0"}`}
-        >
-          {notification.message}
-        </div>
-      )}
     </div>
-
-    
   )
 }
 
-
 export default TableUser
+
+
 
