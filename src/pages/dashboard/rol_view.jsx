@@ -1,13 +1,16 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Button,
+} from "@material-tailwind/react"
 import DataTableComponent from "@/widgets/datatable/data-table"
 import { Service } from "@/data/api"
-import { CheckIcon, PlusIcon, TrashIcon } from "lucide-react"
+import { CheckIcon } from "@heroicons/react/24/solid"
 import { DynamicModal } from "@/widgets/Modal/DynamicModal"
-import Swal from "sweetalert2"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { PlusIcon, TrashIcon } from "lucide-react"
+import Swal2 from "sweetalert2"
 
 export function TableRolView() {
   const [data, setData] = useState([])
@@ -15,10 +18,8 @@ export function TableRolView() {
   const [dataVista, setDataVista] = useState([])
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedRow, setSelectedRow] = useState(null)
-  
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [notification, setNotification] = useState(null)
 
   const fetchData = useCallback(async () => {
     setIsLoading(true)
@@ -38,7 +39,6 @@ export function TableRolView() {
   const fetchRol = async () => {
     try {
       const response = await Service.get("/rol/")
-
       setDataRol(response.map((item) => ({
         value: item.id,
         label: item.nombre,
@@ -52,15 +52,15 @@ export function TableRolView() {
 
   const fetchVista = async () => {
     try {
-        const response = await Service.get("/vistas/")
-        setDataVista(response.map((item) => ({
-            value: item.id,
-            label: item.nombre,
-            }))
-            )
+      const response = await Service.get("/vistas/")
+      setDataVista(response.map((item) => ({
+        value: item.id,
+        label: item.nombre,
+      }))
+      )
     } catch (error) {
-        console.error("Error al obtener las vistas:", error)
-        setTipoDocumento([])
+      console.error("Error al obtener las vistas:", error)
+      setTipoDocumento([])
     }
   }
 
@@ -69,6 +69,81 @@ export function TableRolView() {
     fetchRol()
     fetchVista()
   }, [fetchData])
+
+  const showSwal = (type, title, message = "", timer = 1500) => {
+    Swal2.fire({
+      icon: type,
+      title: title,
+      text: message,
+      showConfirmButton: false,
+      timer: timer,
+      timerProgressBar: true,
+      position: "top-end",
+      toast: true,
+    })
+  }
+
+  const handleSubmit = async (formData) => {
+    try {
+      if (selectedRow) {
+        await Service.put(`/rolvista/${selectedRow.rolvista_id}/`, formData)
+      } else {
+        await Service.post("/rolvista/", formData)
+      }
+      fetchData()
+      setIsModalOpen(false)
+      setSelectedRow(null)
+      showSwal("success", "Vista guardado exitosamente")
+    } catch (error) {
+      console.error("Error al guardar el rol vista:", error)
+
+      // Verifica si viene una respuesta con errores del backend
+      const backendError = error?.response?.data
+
+      // Extrae los mensajes y los convierte a texto plano
+      let errorMessage = "Por favor, inténtalo de nuevo más tarde."
+      if (backendError) {
+        if (typeof backendError === "string") {
+          errorMessage = backendError
+        } else if (Array.isArray(backendError.detail)) {
+          errorMessage = backendError.detail.map((e) => e.msg || e).join("\n")
+        } else if (backendError.detail) {
+          errorMessage = backendError.detail
+        } else {
+          // Si es un objeto de campos
+          errorMessage = Object.entries(backendError)
+            .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(", ") : value}`)
+            .join("\n")
+        }
+      }
+      showSwal("error", "Error al guardar el rol vista", errorMessage)
+    }
+  }
+
+  const handleDelete = async (row) => {
+    Swal2.fire({
+      title: "¿Estás seguro de eliminar este rol vista?",
+      text: "Esta acción no se puede deshacer.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar",
+      reverseButtons: true,
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          await Service.delete(`/rolvista/${row.rolvista_id}/`)
+          showSwal("success", "Rol Vista eliminado correctamente")
+          fetchData()
+        } catch (error) {
+          console.error("Error al eliminar el rol vista:", error)
+          showSwal("error", "Error al eliminar el rol vista", "Inténtalo de nuevo más tarde.")
+        }
+      }
+    })
+  }
 
   const handleAction = (row) => {
     setSelectedRow(row)
@@ -79,116 +154,55 @@ export function TableRolView() {
     setIsModalOpen(false)
     setSelectedRow(null)
   }
-  
-  const showNotification = (type, message) => {
-    setNotification({ type, message })
-    setTimeout(() => setNotification(null), 5000)
-  }
-
-
-  const handleSubmit = async (formData) => {
-    try {
-      setIsLoading(true)
-      setError(null)
-      if (selectedRow) {
-        await Service.put(`/rolvista/${selectedRow.id}`, formData)
-        Swal.fire({
-                    title: "Ruta actualizada",
-                    icon: "success",
-                    showConfirmButton: false,
-                    timer: 1500,
-                })
-      } else {
-        await Service.post("/rolvista/", formData, {
-estado : false,
-        })
-        Swal.fire({
-                    title: "Ruta creada",
-                    icon: "success",
-                    showConfirmButton: false,
-                    timer: 1500,
-                })
-
-
-      }
-      await fetchData()
-      handleCloseModal()
-    } catch (error) {
-        showNotification("red", "Error al enviar el correo. Por favor, intenta de nuevo.");
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-    const handleDelete = async (row) => {
-      console.log(row)
-      try {
-          Swal.fire({
-              title: "¿Estás seguro de eliminar el rol vista?",
-              text: "Esta acción no se puede deshacer.",
-              icon: "warning",
-              showCancelButton: true,
-              confirmButtonColor: "#d33",
-              cancelButtonColor: "#3085d6",
-              confirmButtonText: "Sí, eliminar",
-              cancelButtonText: "Cancelar",
-              reverseButtons: true,
-          }).then(async (result) => {
-              if (result.isConfirmed) {
-                  await Service.delete(`/rolvista/${row.rolvista_id}/`)
-                  Swal.fire({
-                      title: "Ruta eliminado",
-                      icon: "success",
-                      showConfirmButton: false,
-                      timer: 1500,
-                  })
-                  await fetchData()
-              }
-          })
-      } catch (error) {
-          Swal.fire({
-              title: "Error al eliminar el rol vista",
-              text: error,
-              icon: "error",
-              showConfirmButton: false,
-              timer: 1500,
-          })
-      }
-    }
-  
 
   const modalFields = [
-    { name: "rol_id", label: "Rol", type: "select", options: dataRol },
-    { name: "vista_id", label: "Vista", type: "select", options: dataVista },
+    {
+      label: "Rol",
+      name: "rol_id",
+      type: "select",
+      required: true,
+      value: selectedRow?.rol_id || "",
+      options: dataRol,
+    },
+    {
+      label: "Vista",
+      name: "vista_id",
+      type: "select",
+      required: true,
+      value: selectedRow?.vista_id || "",
+      options: dataVista,
+    },
   ]
 
   const columns = [
     {
-      name: "rolvista_id",
+      name: "id",
       selector: (row) => row.rolvista_id,
       sortable: true,
       omit: true,
     },
     {
       name: "Rol",
-      selector: (row) => row.nombre_rol,
+      selector: (row) => row.nombre_rol || "",
       sortable: true,
     },
     {
       name: "Vista",
-      selector: (row) => row.nombre_vista,
+      selector: (row) => row.nombre_vista || "",
       sortable: true,
     },
     {
       name: "Acciones",
       cell: (row) => (
         <div className="flex items-center gap-2">
-        <Button variant="outline" size="sm" className="flex items-center bg-green-500 text-white hover:bg-green-500 hover:bg-opacity-80 gap-2 " onClick={() => handleAction(row)}>
+          <div className="flex items-center gap-2">
+            <Button color="green" size="sm" className="flex items-center gap-2" onClick={() => handleAction(row)}>
               <CheckIcon className="h-4 w-4" />
-          </Button>
-        <Button variant="outline" size="sm" className="flex items-center bg-red-500 text-white hover:bg-red-500 hover:bg-opacity-80 gap-2 " onClick={() => handleDelete(row)}>
+            </Button>
+            <Button color="red" size="sm" className="flex items-center gap-2" onClick={() => handleDelete(row)}>
               <TrashIcon className="h-4 w-4" />
-          </Button>
+            </Button>
+          </div>
         </div>
       ),
       ignoreRowClick: true,
@@ -203,7 +217,15 @@ estado : false,
       <Card className="bg-gradient-to-br from-blue-gray-50 rounded-xl min-h-screen via-white to-white">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-2xl font-bold">Permisos rutas</CardTitle>
-          <Button variant="default" size="sm" className="flex items-center gap-2" onClick={() => setIsModalOpen(true)}>
+          <Button
+            variant="default"
+            size="sm"
+            className="flex items-center gap-2"
+            onClick={() => {
+              setSelectedRow(null)
+              setIsModalOpen(true)
+            }}
+          >
             <PlusIcon className="h-4 w-4" />
             Agregar Nueva Ruta
           </Button>
@@ -216,6 +238,7 @@ estado : false,
           )}
         </CardContent>
       </Card>
+
       <DynamicModal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
@@ -224,18 +247,7 @@ estado : false,
         fields={modalFields}
         initialData={selectedRow ? { ...selectedRow } : null}
       />
-      {notification && (
-        <div
-          className={`fixed top-10 right-4 p-4 rounded-lg text-white ${
-            notification.type === "green" ? "bg-green-500" : "bg-red-500"
-          } transition-opacity duration-500 ${notification ? "opacity-100" : "opacity-0"}`}
-        >
-          {notification.message}
-        </div>
-      )}
     </div>
-
-    
   )
 }
 

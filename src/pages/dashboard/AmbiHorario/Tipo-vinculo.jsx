@@ -1,13 +1,16 @@
-"use client";
+"use client"
 
-import { useState, useEffect, useCallback } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import DataTableComponent from "@/widgets/datatable/data-table";
-import { Service } from "@/data/api";
-import { CheckIcon, PlusIcon, TrashIcon } from "lucide-react";
-import { DynamicModal } from "@/widgets/Modal/DynamicModal";
-import Swal from "sweetalert2";
+import { useState, useEffect, useCallback } from "react"
+import {
+  Button,
+} from "@material-tailwind/react"
+import DataTableComponent from "@/widgets/datatable/data-table"
+import { Service } from "@/data/api"
+import { CheckIcon } from "@heroicons/react/24/solid"
+import { DynamicModal } from "@/widgets/Modal/DynamicModal"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { PlusIcon, TrashIcon } from "lucide-react"
+import Swal2 from "sweetalert2"
 
 export function TableTipoVinculo() {
   const [data, setData] = useState([]);
@@ -15,7 +18,6 @@ export function TableTipoVinculo() {
   const [selectedRow, setSelectedRow] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [notification, setNotification] = useState(null)
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -36,39 +38,64 @@ export function TableTipoVinculo() {
     fetchData();
   }, [fetchData]);
 
-  const handleAction = (row) => {
-    setSelectedRow(row);
-    setIsModalOpen(true);
-  };
-
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setSelectedRow(null);
-  };
+  const showSwal = (type, title, message = "", timer = 1500) => {
+    Swal2.fire({
+      icon: type,
+      title: title,
+      text: message,
+      showConfirmButton: false,
+      timer: timer,
+      timerProgressBar: true,
+      position: "top-end",
+      toast: true,
+    })
+  }
 
   const handleSubmit = async (formData) => {
     try {
-      setIsLoading(true);
-      setError(null);
+      if (!selectedRow) {
+        // Al crear, asignamos estado como true por defecto
+        formData.estado = true;
+      }
+
       if (selectedRow) {
         await Service.put(`/tipovinculo/${selectedRow.id}/`, formData);
-        Swal.fire("Tipo de Vínculo actualizado", "", "success");
       } else {
-        await Service.post("/tipovinculo/", { ...formData, estado: true });
-        Swal.fire("Tipo de Vínculo creado", "", "success");
+        await Service.post("/tipovinculo/", formData);
       }
-      await fetchData();
-      handleCloseModal();
+      fetchData()
+      setIsModalOpen(false)
+      setSelectedRow(null)
+      showSwal("success", "Tipo de vinculo guardado exitosamente")
     } catch (error) {
-      Swal.fire("Error al guardar", error.message, "error");
-    } finally {
-      setIsLoading(false);
+      console.error("Error al guardar el tipo de vinculo:", error)
+
+      // Verifica si viene una respuesta con errores del backend
+      const backendError = error?.response?.data
+
+      // Extrae los mensajes y los convierte a texto plano
+      let errorMessage = "Por favor, inténtalo de nuevo más tarde."
+      if (backendError) {
+        if (typeof backendError === "string") {
+          errorMessage = backendError
+        } else if (Array.isArray(backendError.detail)) {
+          errorMessage = backendError.detail.map((e) => e.msg || e).join("\n")
+        } else if (backendError.detail) {
+          errorMessage = backendError.detail
+        } else {
+          // Si es un objeto de campos
+          errorMessage = Object.entries(backendError)
+            .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(", ") : value}`)
+            .join("\n")
+        }
+      }
+      showSwal("error", "Error al guardar el tipo de vinculo", errorMessage)
     }
-  };
+  }
 
   const handleDelete = async (row) => {
-    Swal.fire({
-      title: "¿Estás seguro de eliminar este Tipo de Vínculo?",
+    Swal2.fire({
+      title: "¿Estás seguro de eliminar este tipo de vinculo?",
       text: "Esta acción no se puede deshacer.",
       icon: "warning",
       showCancelButton: true,
@@ -80,37 +107,53 @@ export function TableTipoVinculo() {
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
-          await Service.delete(`/tipovinculo/${row.id}/`);
-          Swal.fire({
-            title: "Tipo de vínculo eliminado",
-            icon: "success",
-            showConfirmButton: false,
-            timer: 1500,
-          });
-          setData((prevData) => prevData.filter((item) => item.id !== row.id));
+          await Service.delete(`/tipovinculo/${row.id}/`)
+          showSwal("success", "Tipo vinculo eliminado correctamente")
+          fetchData()
         } catch (error) {
-          console.error("Error al eliminar el tipo de vínculo:", error);
-          Swal.fire({
-            title: "Error",
-            text: "No se pudo eliminar el tipo de vínculo. Por favor, inténtalo de nuevo.",
-            icon: "error",
-            position: "bottom-right",
-            showConfirmButton: false,
-            timer: 1500,
-          });
+          console.error("Error al eliminar el tipo de vinculo:", error)
+          showSwal("error", "Error al eliminar el tipo de vinculo", "Inténtalo de nuevo más tarde.")
         }
       }
-    });
+    })
+  }
+
+  const handleAction = (row) => {
+    setSelectedRow(row);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedRow(null);
   };
 
   const modalFields = [
-    { name: "codigo", label: "Código", type: "text" },
-    { name: "nombre", label: "Nombre", type: "text" },
-    { name: "descripcion", label: "Descripción", type: "textarea" },
+    {
+      label: "Código",
+      name: "codigo",
+      type: "text",
+      required: true,
+      value: selectedRow?.codigo || "",
+    },
+    {
+      label: "Nombre",
+      name: "nombre",
+      type: "text",
+      required: true,
+      value: selectedRow?.nombre || "",
+    },
+    {
+      label: "Descripción",
+      name: "descripcion",
+      type: "textarea",
+      required: true,
+      value: selectedRow?.descripcion || "",
+    },
     selectedRow
       ? {
-        name: "estado",
         label: "Estado",
+        name: "estado",
         type: "select",
         options: [
           { value: true, label: "Activo" },
@@ -121,9 +164,21 @@ export function TableTipoVinculo() {
   ].filter(Boolean);
 
   const columns = [
-    { name: "Código", selector: (row) => row.codigo, sortable: true },
-    { name: "Nombre", selector: (row) => row.nombre, sortable: true },
-    { name: "Descripción", selector: (row) => row.descripcion, sortable: true },
+    {
+      name: "Código",
+      selector: (row) => row.codigo,
+      sortable: true
+    },
+    {
+      name: "Nombre",
+      selector: (row) => row.nombre,
+      sortable: true
+    },
+    {
+      name: "Descripción",
+      selector: (row) => row.descripcion,
+      sortable: true
+    },
     {
       name: "Estado",
       selector: (row) => (row.estado ? "Activo" : "Inactivo"),
@@ -133,20 +188,10 @@ export function TableTipoVinculo() {
       name: "Acciones",
       cell: (row) => (
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex items-center bg-green-500 text-white hover:bg-green-500 hover:bg-opacity-80 gap-2"
-            onClick={() => handleAction(row)}
-          >
+          <Button color="green" size="sm" className="flex items-center gap-2" onClick={() => handleAction(row)}>
             <CheckIcon className="h-4 w-4" />
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex items-center bg-red-500 text-white hover:bg-red-500 hover:bg-opacity-80 gap-2"
-            onClick={() => handleDelete(row)}
-          >
+          <Button color="red" size="sm" className="flex items-center gap-2" onClick={() => handleDelete(row)}>
             <TrashIcon className="h-4 w-4" />
           </Button>
         </div>
@@ -156,7 +201,7 @@ export function TableTipoVinculo() {
       button: true,
       width: "150px",
     },
-  ];
+  ]
 
   return (
     <div className="mt-6 mb-8 space-y-6 bg-gradient-to-br from-blue-gray-50 mt-12 rounded-xl min-h-screen via-white to-white">
@@ -167,7 +212,10 @@ export function TableTipoVinculo() {
             variant="default"
             size="sm"
             className="flex items-center gap-2"
-            onClick={() => setIsModalOpen(true)}
+            onClick={() => {
+              setSelectedRow(null)
+              setIsModalOpen(true)
+            }}
           >
             <PlusIcon className="h-4 w-4" />
             Agregar Nuevo
@@ -189,14 +237,6 @@ export function TableTipoVinculo() {
         fields={modalFields}
         initialData={selectedRow ? { ...selectedRow } : null}
       />
-      {notification && (
-        <div
-          className={`fixed top-10 right-4 p-4 rounded-lg text-white ${notification.type === "green" ? "bg-green-500" : "bg-red-500"
-            } transition-opacity duration-500 ${notification ? "opacity-100" : "opacity-0"}`}
-        >
-          {notification.message}
-        </div>
-      )}
     </div>
   );
 }

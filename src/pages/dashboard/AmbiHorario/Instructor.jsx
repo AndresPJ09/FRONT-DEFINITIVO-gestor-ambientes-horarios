@@ -20,10 +20,10 @@ export function TableInstructor() {
 
     useEffect(() => {
         if (isModalOpen) {
-          setFormData(selectedRow || {});
+            setFormData(selectedRow || {});
         }
-      }, [isModalOpen, selectedRow]);
-    
+    }, [isModalOpen, selectedRow]);
+
 
     const fetchData = useCallback(async () => {
         setIsLoading(true);
@@ -44,7 +44,6 @@ export function TableInstructor() {
     const fetchTipoVinculo = async () => {
         try {
             const response = await Service.get("/tipovinculo/")
-
             setDataTipoVinculo(response.map((item) => ({
                 value: item.id,
                 label: item.nombre,
@@ -60,6 +59,19 @@ export function TableInstructor() {
         fetchData();
         fetchTipoVinculo()
     }, [fetchData]);
+
+    const showSwal = (type, title, message = "", timer = 1500) => {
+        Swal2.fire({
+            icon: type,
+            title: title,
+            text: message,
+            showConfirmButton: false,
+            timer: timer,
+            timerProgressBar: true,
+            position: "top-end",
+            toast: true,
+        })
+    }
 
     const handleAction = (row) => {
         setFormData({
@@ -167,33 +179,32 @@ export function TableInstructor() {
             }
         });
     };
+
     const handleInputChange = (name, value) => {
         const newFormData = { ...formData, [name]: value };
-      
+
         // Validación para todos los casos posibles de fechas
         const fechaInicio = newFormData.fecha_inicio ? new Date(newFormData.fecha_inicio) : null;
         const fechaFin = newFormData.fecha_fin ? new Date(newFormData.fecha_fin) : null;
         const fechaFinalizacion = newFormData.fecha_finalizacion ? new Date(newFormData.fecha_finalizacion) : null;
-      
+
         // Validar fecha_fin vs fecha_inicio
         if (fechaInicio && fechaFin && fechaFin < fechaInicio) {
-          showNotification('red', 'La fecha fin no puede ser anterior a la fecha inicio');
-          return;
+            showNotification('red', 'La fecha fin no puede ser anterior a la fecha inicio');
+            return;
         }
-      
+
         // Validar fecha_finalizacion vs fecha_inicio
         if (fechaInicio && fechaFinalizacion && fechaFinalizacion < fechaInicio) {
-          showNotification('red', 'La fecha de finalización no puede ser anterior a la fecha de inicio');
-          return;
+            showNotification('red', 'La fecha de finalización no puede ser anterior a la fecha de inicio');
+            return;
         }
-      
         setFormData(newFormData);
         if (onInputChange) onInputChange(name, value);
-      };
+    };
 
     const handleFileChange = (e) => {
         const file = e.target.files[0];
-
         if (!file) return;
 
         // Validar tipo de archivo
@@ -254,12 +265,10 @@ export function TableInstructor() {
             fotoFile: '',
             shouldDeleteImage: true,
         });
-
         console.log('Estado después de eliminar imagen:', {
             foto: null,
             shouldDeleteImage: true
         });
-
     };
 
     const modalFields = [
@@ -284,13 +293,13 @@ export function TableInstructor() {
                 </Button>
             )
         },
-        { name: "tipo_vinculacion_id", label: "ID del tipo de vinculo", type: "select", options: dataTipoVinculo },
+        { name: "tipo_vinculacion_id", label: "Tipo de vinculo", type: "select", options: dataTipoVinculo },
         { name: "especialidad", label: "Especialidad", type: "text" },
-        { name: "fecha_inicio", label: "FechaInicio", type: "date", minDate: formData.fecha_inicio  },
-        { name: "fecha_finalizacion", label: "FechaFin", type: "date", maxDate: formData.fecha_finalizacion },
-        { name: "hora_ingreso", label: "HorasIngreso", type: "time" },
-        { name: "hora_egreso", label: "HorasEgreso", type: "time" },
-        { name: "horas_asignadas", label: "HorasAsignadas", type: "number" },
+        { name: "fecha_inicio", label: "Fecha de inicio", type: "date", minDate: formData.fecha_inicio },
+        { name: "fecha_finalizacion", label: "Fecha de fin", type: "date", maxDate: formData.fecha_finalizacion },
+        { name: "hora_ingreso", label: "Horas de ingreso", type: "time" },
+        { name: "hora_egreso", label: "Horas de egreso", type: "time" },
+        { name: "horas_asignadas", label: "Horas asignadas", type: "number" },
         selectedRow
             ? {
                 name: "estado",

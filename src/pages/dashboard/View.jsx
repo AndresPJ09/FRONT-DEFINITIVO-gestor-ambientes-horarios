@@ -1,24 +1,24 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Button,
+} from "@material-tailwind/react"
 import DataTableComponent from "@/widgets/datatable/data-table"
 import { Service } from "@/data/api"
-import { CheckIcon, PlusIcon, TrashIcon } from "lucide-react"
+import { CheckIcon } from "@heroicons/react/24/solid"
 import { DynamicModal } from "@/widgets/Modal/DynamicModal"
-import { useToast } from "@/components/hooks/use-toast"
-import Swal from "sweetalert2"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { PlusIcon, TrashIcon } from "lucide-react"
+import Swal2 from "sweetalert2"
 
 export function TableView() {
   const [data, setData] = useState([])
   const [dataModule, setDataModule] = useState([])
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedRow, setSelectedRow] = useState(null)
-  
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [notification, setNotification] = useState(null)
 
   const fetchData = useCallback(async () => {
     setIsLoading(true)
@@ -27,9 +27,8 @@ export function TableView() {
       const response = await Service.get("/vistas/")
       setData(response || [])
     } catch (error) {
-      console.error("Error al obtener los usuarios:", error)
+      console.error("Error al obtener las vistas:", error)
       setError("Error al cargar los datos. Por favor, intente de nuevo más tarde.")
-      setData([])
     } finally {
       setIsLoading(false)
     }
@@ -38,12 +37,10 @@ export function TableView() {
   const fetchModule = async () => {
     try {
       const response = await Service.get("/modulos/")
-
       setDataModule(response.map((item) => ({
         value: item.id,
         label: item.nombre,
-      }))
-      )
+      })))
     } catch (error) {
       console.error("Error al obtener los módulos:", error)
       setDataModule([])
@@ -55,65 +52,59 @@ export function TableView() {
     fetchModule()
   }, [fetchData])
 
-  const handleAction = (row) => {
-    setSelectedRow(row)
-    setIsModalOpen(true)
+  const showSwal = (type, title, message = "", timer = 1500) => {
+    Swal2.fire({
+      icon: type,
+      title: title,
+      text: message,
+      showConfirmButton: false,
+      timer: timer,
+      timerProgressBar: true,
+      position: "top-end",
+      toast: true,
+    })
   }
-
-  const handleCloseModal = () => {
-    setIsModalOpen(false)
-    setSelectedRow(null)
-  }
-  
-  const showNotification = (type, message) => {
-    setNotification({ type, message })
-    setTimeout(() => setNotification(null), 5000)
-  }
-
 
   const handleSubmit = async (formData) => {
     try {
-      setIsLoading(true)
-      setError(null)
       if (selectedRow) {
         await Service.put(`/vistas/${selectedRow.id}/`, formData)
-        Swal.fire({
-          title: "vista actualizada",
-          icon: "success",
-          showConfirmButton: false,
-          timer: 1500,
-      })
       } else {
-        await Service.post("/vistas/", formData, {
-estado : false,
-        })
-
-        Swal.fire({
-          title: "vista guardada",
-          icon: "success",
-          showConfirmButton: false,
-          timer: 1500,
-      })
-
+        await Service.post("/vistas/", formData)
       }
-      await fetchData()
-      handleCloseModal()
+      fetchData()
+      setIsModalOpen(false)
+      setSelectedRow(null)
+      showSwal("success", "Vista guardado exitosamente")
     } catch (error) {
-      Swal.fire({
-        title: "Error al guardar la vista",
-        text: error,
-        icon: "error",
-        showConfirmButton: false,
-        timer: 1500,
-    })
-    } finally {
-      setIsLoading(false)
+      console.error("Error al guardar el vista:", error)
+
+      // Verifica si viene una respuesta con errores del backend
+      const backendError = error?.response?.data
+
+      // Extrae los mensajes y los convierte a texto plano
+      let errorMessage = "Por favor, inténtalo de nuevo más tarde."
+      if (backendError) {
+        if (typeof backendError === "string") {
+          errorMessage = backendError
+        } else if (Array.isArray(backendError.detail)) {
+          errorMessage = backendError.detail.map((e) => e.msg || e).join("\n")
+        } else if (backendError.detail) {
+          errorMessage = backendError.detail
+        } else {
+          // Si es un objeto de campos
+          errorMessage = Object.entries(backendError)
+            .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(", ") : value}`)
+            .join("\n")
+        }
+      }
+      showSwal("error", "Error al guardar el vista", errorMessage)
     }
   }
 
   const handleDelete = async (row) => {
-    Swal.fire({
-      title: "¿Estás seguro de eliminar esta vista?",
+    Swal2.fire({
+      title: "¿Estás seguro de eliminar este vista?",
       text: "Esta acción no se puede deshacer.",
       icon: "warning",
       showCancelButton: true,
@@ -125,62 +116,65 @@ estado : false,
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
-          await Service.delete(`/vistas/${row.id}/`);
-          Swal.fire({
-            title: "Vista eliminada",
-            icon: "success",
-            showConfirmButton: false,
-            timer: 1500,
-          });
-          // Actualiza el estado manualmente
-          setData((prevData) => prevData.filter((item) => item.id !== row.id));
+          await Service.delete(`/vistas/${row.id}/`)
+          showSwal("success", "Vista eliminado correctamente")
+          fetchData()
         } catch (error) {
-          console.error("Error al eliminar la vista:", error);
-          Swal.fire({
-            title: "Error",
-            text: "No se pudo eliminar la vista. Por favor, inténtalo de nuevo más tarde.",
-            icon: "error",
-            position: "bottom-right",
-            showConfirmButton: false,
-            timer: 1500,
-          });
+          console.error("Error al eliminar el vista:", error)
+          showSwal("error", "Error al eliminar el vista", "Inténtalo de nuevo más tarde.")
         }
       }
-    });
-  };
+    })
+  }
+
+  const handleAction = (row) => {
+    setSelectedRow(row)
+    setIsModalOpen(true)
+  }
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false)
+    setSelectedRow(null)
+  }
 
   const modalFields = [
-    { name: "nombre", label: "Nombre", type: "text" },
-    { name: "descripcion", label: "Descripción", type: "textarea" },
-    { name: "ruta", label: "Ruta", type: "text" },
-    {name : "icono", label: "icono", type: "text"},
-    { name: "modulo_id", label: "ID del Módulo", type: "select", options: dataModule },
+    {
+      label: "Nombre",
+      name: "nombre",
+      type: "text",
+      required: true,
+      value: selectedRow?.nombre || "",
+    },
+    {
+      label: "Ruta",
+      name: "ruta",
+      type: "text",
+      required: true,
+      value: selectedRow?.ruta || "",
+    },
+    {
+      label: "Módulo",
+      name: "modulo_id",
+      type: "select",
+      required: true,
+      value: selectedRow?.modulo_id || "",
+      options: dataModule,
+    },
   ]
 
   const columns = [
     {
-      name: "id",
-      selector: (row) => row.id,
-      sortable: true,
-      omit: true,
-    },
-    {
-      name: "nombre",
+      name: "Nombre",
       selector: (row) => row.nombre,
       sortable: true,
     },
     {
-      name: "descripcion",
-      selector: (row) => row.descripcion,
-      sortable: true,
-    },
-    {
-      name: "ruta",
+      name: "Ruta",
       selector: (row) => row.ruta,
       sortable: true,
     },
     {
-      name: "modulo_id",
+      name: "Módulo",
       selector: (row) => dataModule.find((item) => item.value === row.modulo_id)?.label,
       sortable: true,
     },
@@ -188,20 +182,10 @@ estado : false,
       name: "Acciones",
       cell: (row) => (
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex items-center bg-green-500 text-white hover:bg-green-500 hover:bg-opacity-80 gap-2"
-            onClick={() => handleAction(row)}
-          >
+          <Button color="green" size="sm" className="flex items-center gap-2" onClick={() => handleAction(row)}>
             <CheckIcon className="h-4 w-4" />
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex items-center bg-red-500 text-white hover:bg-red-500 hover:bg-opacity-80 gap-2"
-            onClick={() => handleDelete(row)}
-          >
+          <Button color="red" size="sm" className="flex items-center gap-2" onClick={() => handleDelete(row)}>
             <TrashIcon className="h-4 w-4" />
           </Button>
         </div>
@@ -211,21 +195,24 @@ estado : false,
       button: true,
       width: "150px",
     },
-  ];
+  ]
 
   return (
-    <div className="mt-6 mb-8 space-y-6 bg-gradient-to-br from-blue-gray-50 mt-12 rounded-xl min-h-screen via-white to-white">
-      <Card className="bg-gradient-to-br from-blue-gray-50 rounded-xl min-h-screen via-white to-white">
+    <div className="mt-6 mb-8 space-y-6 bg-gradient-to-br from-blue-gray-50 via-white to-white rounded-xl min-h-screen">
+      <Card className="bg-gradient-to-br from-blue-gray-50 via-white to-white rounded-xl">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-2xl font-bold">Gestión de vistas</CardTitle>
           <Button
             variant="default"
             size="sm"
             className="flex items-center gap-2"
-            onClick={() => setIsModalOpen(true)}
+            onClick={() => {
+              setSelectedRow(null)
+              setIsModalOpen(true)
+            }}
           >
             <PlusIcon className="h-4 w-4" />
-            Agregar Nuevo
+            Agregar Nueva Vista
           </Button>
         </CardHeader>
         <CardContent>
@@ -236,25 +223,17 @@ estado : false,
           )}
         </CardContent>
       </Card>
+
       <DynamicModal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
         onSubmit={handleSubmit}
-        title={selectedRow ? "Editar vista" : "Crear nuevo vista"}
+        title={selectedRow ? "Editar Vista" : "Crear Nueva Vista"}
         fields={modalFields}
         initialData={selectedRow ? { ...selectedRow } : null}
       />
-      {notification && (
-        <div
-          className={`fixed top-10 right-4 p-4 rounded-lg text-white ${notification.type === "green" ? "bg-green-500" : "bg-red-500"
-            } transition-opacity duration-500 ${notification ? "opacity-100" : "opacity-0"}`}
-        >
-          {notification.message}
-        </div>
-      )}
     </div>
-  );
+  )
 }
 
 export default TableView
-
