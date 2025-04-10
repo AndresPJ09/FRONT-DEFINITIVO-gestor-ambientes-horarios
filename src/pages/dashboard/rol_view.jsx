@@ -229,7 +229,7 @@ export function TableRolView() {
             }}
           >
             <PlusIcon className="h-4 w-4" />
-            Agregar Nueva Ruta
+            Agregar Nuevo
           </Button>
         </CardHeader>
         <CardContent>

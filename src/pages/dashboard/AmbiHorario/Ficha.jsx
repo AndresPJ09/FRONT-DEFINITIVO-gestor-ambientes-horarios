@@ -1,13 +1,16 @@
-"use client";
+"use client"
 
-import { useState, useEffect, useCallback } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import DataTableComponent from "@/widgets/datatable/data-table";
-import { Service } from "@/data/api";
-import { CheckIcon, PlusIcon, TrashIcon } from "lucide-react";
-import { DynamicModal } from "@/widgets/Modal/DynamicModal";
-import Swal from "sweetalert2";
+import { useState, useEffect, useCallback } from "react"
+import {
+  Button,
+} from "@material-tailwind/react"
+import DataTableComponent from "@/widgets/datatable/data-table"
+import { Service } from "@/data/api"
+import { CheckIcon } from "@heroicons/react/24/solid"
+import { DynamicModal } from "@/widgets/Modal/DynamicModal"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { PlusIcon, TrashIcon } from "lucide-react"
+import Swal2 from "sweetalert2"
 
 export function TableFicha() {
     const [data, setData] = useState([]);
@@ -26,39 +29,6 @@ export function TableFicha() {
             setFormData(selectedRow || {});
         }
     }, [isModalOpen, selectedRow]);
-
-    // Función mejorada para manejar cambios
-    const handleInputChange = (name, value) => {
-        const newFormData = { ...formData, [name]: value };
-
-        // Validación cruzada de fechas
-        if (name === 'fecha_inicio' || name === 'fecha_fin' || name === 'fin_lectiva') {
-            const fechaInicio = newFormData.fecha_inicio ? new Date(newFormData.fecha_inicio) : null;
-            const fechaFin = newFormData.fecha_fin ? new Date(newFormData.fecha_fin) : null;
-            const finLectiva = newFormData.fin_lectiva ? new Date(newFormData.fin_lectiva) : null;
-
-            // Validar que fecha fin no sea anterior a inicio
-            if (fechaInicio && fechaFin && fechaFin < fechaInicio) {
-                showNotification('red', 'La fecha fin no puede ser anterior a la fecha inicio');
-                return;
-            }
-
-            // Validar que fin lectiva no sea anterior a fecha fin
-            if (fechaFin && finLectiva && finLectiva < fechaFin) {
-                showNotification('red', 'El fin lectiva no puede ser anterior a la fecha fin');
-                return;
-            }
-
-            // Calcular semanas si ambas fechas son válidas
-            if (fechaInicio && fechaFin && fechaFin >= fechaInicio) {
-                const diffTime = Math.abs(fechaFin - fechaInicio);
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                newFormData.numero_semanas = Math.ceil(diffDays / 7);
-            }
-        }
-
-        setFormData(newFormData);
-    };
 
     const fetchData = useCallback(async () => {
         setIsLoading(true);
@@ -111,20 +81,51 @@ export function TableFicha() {
         fetchProyecto()
     }, []);
 
-    const handleAction = (row) => {
-        setSelectedRow(row);
-        setIsModalOpen(true);
-    };
+    const showSwal = (type, title, message = "", timer = 1500) => {
+        Swal2.fire({
+            icon: type,
+            title: title,
+            text: message,
+            showConfirmButton: false,
+            timer: timer,
+            timerProgressBar: true,
+            position: "top-end",
+            toast: true,
+        })
+    }
 
-    const handleCloseModal = () => {
-        setIsModalOpen(false);
-        setSelectedRow(null);
-        setFormData((prevFormData) => ({
-            ...prevFormData,
-            fecha_inicio: "",
-            fecha_fin: "",
-            fin_lectiva: "",
-        }));
+
+    // Función mejorada para manejar cambios
+    const handleInputChange = (name, value) => {
+        const newFormData = { ...formData, [name]: value };
+
+        // Validación cruzada de fechas
+        if (name === 'fecha_inicio' || name === 'fecha_fin' || name === 'fin_lectiva') {
+            const fechaInicio = newFormData.fecha_inicio ? new Date(newFormData.fecha_inicio) : null;
+            const fechaFin = newFormData.fecha_fin ? new Date(newFormData.fecha_fin) : null;
+            const finLectiva = newFormData.fin_lectiva ? new Date(newFormData.fin_lectiva) : null;
+
+            // Validar que fecha fin no sea anterior a inicio
+            if (fechaInicio && fechaFin && fechaFin < fechaInicio) {
+                showNotification('red', 'La fecha fin no puede ser anterior a la fecha inicio');
+                return;
+            }
+
+            // Validar que fin lectiva no sea anterior a fecha fin
+            if (fechaFin && finLectiva && finLectiva < fechaFin) {
+                showNotification('red', 'El fin lectiva no puede ser anterior a la fecha fin');
+                return;
+            }
+
+            // Calcular semanas si ambas fechas son válidas
+            if (fechaInicio && fechaFin && fechaFin >= fechaInicio) {
+                const diffTime = Math.abs(fechaFin - fechaInicio);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                newFormData.numero_semanas = Math.ceil(diffDays / 7);
+            }
+        }
+
+        setFormData(newFormData);
     };
 
     document.addEventListener("DOMContentLoaded", function () {
@@ -154,13 +155,6 @@ export function TableFicha() {
         });
     });
 
-
-
-    const showNotification = (type, message) => {
-        setNotification({ type, message })
-        setTimeout(() => setNotification(null), 5000)
-    }
-
     const handleSubmit = async (formData) => {
         const fechaInicio = new Date(formData.fecha_inicio);
         const fechaFin = new Date(formData.fecha_fin);
@@ -169,47 +163,48 @@ export function TableFicha() {
             showNotification('red', 'La fecha fin no puede ser anterior a la fecha inicio');
             return;
         }
-
         try {
-            setIsLoading(true);
-            setError(null);
-
-            if (selectedRow) {
-                await Service.put(`/ficha/${selectedRow.id}/`, formData);
-                Swal.fire({
-                    title: "Ficha actualizado",
-                    icon: "success",
-                    showConfirmButton: false,
-                    timer: 1500,
-                });
-            } else {
-                await Service.post("/ficha/", { ...formData, estado: true });
-                Swal.fire({
-                    title: "Ficha creado",
-                    icon: "success",
-                    showConfirmButton: false,
-                    timer: 1500,
-                });
+            if (!selectedRow) {
+                formData.estado = true;
             }
-
-            await fetchData();
-            handleCloseModal();
+            if (selectedRow) {
+                await Service.put(`/ficha/${selectedRow.id}/`, formData)
+            } else {
+                await Service.post("/ficha/", formData)
+            }
+            fetchData()
+            setIsModalOpen(false)
+            setSelectedRow(null)
+            showSwal("success", "Ficha guardado exitosamente")
         } catch (error) {
-            Swal.fire({
-                title: "Error al guardar el ficha",
-                text: error,
-                icon: "error",
-                showConfirmButton: false,
-                timer: 1500,
-            });
-        } finally {
-            setIsLoading(false);
+            console.error("Error al guardar la ficha:", error)
+
+            // Verifica si viene una respuesta con errores del backend
+            const backendError = error?.response?.data
+
+            // Extrae los mensajes y los convierte a texto plano
+            let errorMessage = "Por favor, inténtalo de nuevo más tarde."
+            if (backendError) {
+                if (typeof backendError === "string") {
+                    errorMessage = backendError
+                } else if (Array.isArray(backendError.detail)) {
+                    errorMessage = backendError.detail.map((e) => e.msg || e).join("\n")
+                } else if (backendError.detail) {
+                    errorMessage = backendError.detail
+                } else {
+                    // Si es un objeto de campos
+                    errorMessage = Object.entries(backendError)
+                        .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(", ") : value}`)
+                        .join("\n")
+                }
+            }
+            showSwal("error", "Error al guardar la ficha", errorMessage)
         }
-    };
+    }
 
     const handleDelete = async (row) => {
-        Swal.fire({
-            title: "¿Estás seguro de eliminar esta ficha?",
+        Swal2.fire({
+            title: "¿Estás seguro de eliminar este ficha?",
             text: "Esta acción no se puede deshacer.",
             icon: "warning",
             showCancelButton: true,
@@ -221,43 +216,91 @@ export function TableFicha() {
         }).then(async (result) => {
             if (result.isConfirmed) {
                 try {
-                    await Service.delete(`/ficha/${row.id}/`);
-                    Swal.fire({
-                        title: "Ficha eliminada",
-                        icon: "success",
-                        showConfirmButton: false,
-                        timer: 1500,
-                    });
-                    setData((prevData) => prevData.filter((item) => item.id !== row.id));
+                    await Service.delete(`/ficha/${row.id}/`)
+                    showSwal("success", "Ficha eliminado correctamente")
+                    fetchData()
                 } catch (error) {
-                    console.error("Error al eliminar el ficha:", error);
-                    Swal.fire({
-                        title: "Error",
-                        text: "No se pudo eliminar el ficha. Por favor, inténtalo de nuevo más tarde.",
-                        icon: "error",
-                        position: "bottom-right",
-                        showConfirmButton: false,
-                        timer: 1500,
-                    });
+                    console.error("Error al eliminar la ficha:", error)
+                    showSwal("error", "Error al eliminar la ficha", "Inténtalo de nuevo más tarde.")
                 }
             }
-        });
+        })
+    }
+
+    const handleAction = (row) => {
+        setSelectedRow(row);
+        setIsModalOpen(true);
     };
 
+    const handleCloseModal = () => {
+        setIsModalOpen(false);
+        setSelectedRow(null);
+        setFormData((prevFormData) => ({
+            ...prevFormData,
+            fecha_inicio: "",
+            fecha_fin: "",
+            fin_lectiva: "",
+        }));
+    };
+
+    const showNotification = (type, message) => {
+        setNotification({ type, message })
+        setTimeout(() => setNotification(null), 5000)
+    }
+
+
     const modalFields = [
-        { name: "codigo", label: "Código", type: "text" },
-        { name: "programa_id", label: "ID del programa", type: "select", options: dataPrograma },
-        { name: "proyecto_id", label: "ID del proyecto", type: "select", options: dataProyecto, colSpan: 2 },
-        { name: "fecha_inicio", label: "Fecha inicio", type: "date" },
-        { name: "fecha_fin", label: "Fecha fin", type: "date" },
         {
-            name: "numero_semanas",
-            label: "Número de semanas",
-            type: "number",
-            readOnly: true, // Campo de solo lectura
-            className: "bg-gray-100" // Estilo visual para indicar que está bloqueado
+            label: "Código",
+            name: "codigo",
+            type: "text",
+            required: true,
+            value: selectedRow?.codigo || "",
         },
-        { name: "fin_lectiva", label: "Fin lectiva", type: "date" },
+        {
+            label: "Programa",
+            name: "programa_id",
+            type: "select",
+            required: true,
+            value: selectedRow?.programa_id || "",
+            options: dataPrograma
+        },
+        {
+            label: "Proyecto",
+            name: "proyecto_id",
+            type: "select",
+            required: true,
+            value: selectedRow?.proyecto_id || "",
+            options: dataProyecto, colSpan: 2
+        },
+        {
+            label: "Fecha inicio",
+            name: "fecha_inicio",
+            type: "date",
+            required: true,
+            value: selectedRow?.fecha_inicio || "",
+        },
+        {
+            label: "Fecha fin",
+            name: "fecha_fin",
+            type: "date",
+            required: true,
+            value: selectedRow?.fecha_fin || "",
+        },
+        {
+            label: "Número de semanas",
+            name: "numero_semanas",
+            type: "number",
+            readOnly: true,
+            className: "bg-gray-100"
+        },
+        {
+            label: "Fin lectiva",
+            name: "fin_lectiva",
+            type: "date",
+            required: true,
+            value: selectedRow?.fin_lectiva || "",
+        },
         { name: "cupo", label: "Cupo", type: "number" },
         selectedRow
             ? {
@@ -298,20 +341,10 @@ export function TableFicha() {
             name: "Acciones",
             cell: (row) => (
                 <div className="flex items-center gap-2">
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        className="flex items-center bg-green-500 text-white hover:bg-green-500 hover:bg-opacity-80 gap-2"
-                        onClick={() => handleAction(row)}
-                    >
+                    <Button color="green" size="sm" className="flex items-center gap-2" onClick={() => handleAction(row)}>
                         <CheckIcon className="h-4 w-4" />
                     </Button>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        className="flex items-center bg-red-500 text-white hover:bg-red-500 hover:bg-opacity-80 gap-2"
-                        onClick={() => handleDelete(row)}
-                    >
+                    <Button color="red" size="sm" className="flex items-center gap-2" onClick={() => handleDelete(row)}>
                         <TrashIcon className="h-4 w-4" />
                     </Button>
                 </div>
@@ -321,7 +354,7 @@ export function TableFicha() {
             button: true,
             width: "150px",
         },
-    ];
+    ]
 
     return (
         <div className="mt-6 mb-8 space-y-6 bg-gradient-to-br from-blue-gray-50 mt-12 rounded-xl min-h-screen via-white to-white">
@@ -332,7 +365,10 @@ export function TableFicha() {
                         variant="default"
                         size="sm"
                         className="flex items-center gap-2"
-                        onClick={() => setIsModalOpen(true)}
+                        onClick={() => {
+                            setSelectedRow(null)
+                            setIsModalOpen(true)
+                        }}
                     >
                         <PlusIcon className="h-4 w-4" />
                         Agregar Nuevo
@@ -358,14 +394,6 @@ export function TableFicha() {
                 maxDateForStart={formData.fecha_fin} // Para bloquear fechas posteriores
                 minDateForLectiva={formData.fecha_fin}
             />
-            {notification && (
-                <div
-                    className={`fixed top-10 right-4 p-4 rounded-lg text-white ${notification.type === "green" ? "bg-green-500" : "bg-red-500"
-                        } transition-opacity duration-500 ${notification ? "opacity-100" : "opacity-0"}`}
-                >
-                    {notification.message}
-                </div>
-            )}
         </div>
     );
 }

@@ -217,7 +217,7 @@ export function TableAmbiente() {
             }}
           >
             <PlusIcon className="h-4 w-4" />
-            Agregar nuevo ambiente
+            Agregar nuevo
           </Button>
         </CardHeader>
         <CardContent>

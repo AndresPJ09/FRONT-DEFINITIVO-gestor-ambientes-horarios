@@ -205,7 +205,7 @@ export function TableFase() {
             }}
           >
             <PlusIcon className="h-4 w-4" />
-            Agregar nueva fase
+            Agregar nuevo
           </Button>
         </CardHeader>
         <CardContent>

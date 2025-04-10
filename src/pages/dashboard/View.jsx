@@ -212,7 +212,7 @@ export function TableView() {
             }}
           >
             <PlusIcon className="h-4 w-4" />
-            Agregar Nueva Vista
+            Agregar Nuevo
           </Button>
         </CardHeader>
         <CardContent>
@@ -236,8 +236,4 @@ export function TableView() {
   )
 }
 
-<<<<<<< HEAD
 export default TableView
-=======
-export default TableView
->>>>>>> b9796160d52df085a4256b95b573838dd7c70056

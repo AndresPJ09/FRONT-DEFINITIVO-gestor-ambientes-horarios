@@ -197,7 +197,7 @@ export function TableModule() {
             }}
           >
             <PlusIcon className="h-4 w-4" />
-            Agregar Nuevo Módulo
+            Agregar Nuevo
           </Button>
         </CardHeader>
         <CardContent>
@@ -220,8 +220,4 @@ export function TableModule() {
   )
 }
 
-<<<<<<< HEAD
 export default TableModule
-=======
-export default TableModule
->>>>>>> b9796160d52df085a4256b95b573838dd7c70056

@@ -184,7 +184,7 @@ export function TableRol() {
             }}
           >
             <PlusIcon className="h-4 w-4" />
-            Agregar Nuevo Rol
+            Agregar Nuevo
           </Button>
         </CardHeader>
         <CardContent>
