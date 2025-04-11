@@ -77,11 +77,8 @@ export function Home() {
               <Typography variant="h6" color="blue-gray" className="mb-1">
                 Processos pendientes
               </Typography>
-              <Typography
-                variant="small"
-                className="flex items-center gap-1 font-normal text-blue-gray-600"
-              >
-              </Typography>
+              {/* 🚨 PROBLEMA: Typography vacío */}
+              {/* ✅ SOLUCIÓN: Eliminado (o añade contenido si es necesario) */}
             </div>
             <Menu placement="left-start">
               <MenuHandler>
@@ -201,11 +198,8 @@ export function Home() {
             <Typography variant="h6" color="blue-gray" className="mb-2">
               Deserciones
             </Typography>
-            <Typography
-              variant="small"
-              className="flex items-center gap-1 font-normal text-blue-gray-600"
-            >
-            </Typography>
+            {/* 🚨 PROBLEMA: Typography vacío */}
+            {/* ✅ SOLUCIÓN: Eliminado (o añade contenido si es necesario) */}
           </CardHeader>
           <CardBody className="pt-0">
             {ordersOverviewData.map(

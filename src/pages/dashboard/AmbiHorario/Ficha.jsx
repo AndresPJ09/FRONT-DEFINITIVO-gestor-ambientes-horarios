@@ -301,11 +301,15 @@ export function TableFicha() {
             required: true,
             value: selectedRow?.fin_lectiva || "",
         },
-        { name: "cupo", label: "Cupo", type: "number" },
+        { 
+            name: "cupo", 
+            label: "Cupo", 
+            type: "number" 
+        },
         selectedRow
             ? {
-                name: "estado",
                 label: "Estado",
+                name: "estado",
                 type: "select",
                 options: [
                     { value: true, label: "Activo" },
@@ -362,7 +366,7 @@ export function TableFicha() {
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-2xl font-bold">Gestión de Fichas</CardTitle>
                     <Button
-                        variant="default"
+                        variant="filled"
                         size="sm"
                         className="flex items-center gap-2"
                         onClick={() => {

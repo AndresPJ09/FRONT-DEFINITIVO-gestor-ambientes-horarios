@@ -257,7 +257,7 @@ export function TablePeriodo() {
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-2xl font-bold">Gestión de Periodos</CardTitle>
           <Button
-            variant="default"
+            variant="filled"
             size="sm"
             className="flex items-center gap-2"
             onClick={() => {

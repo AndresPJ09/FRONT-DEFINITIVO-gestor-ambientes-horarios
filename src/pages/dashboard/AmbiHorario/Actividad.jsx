@@ -12,8 +12,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { PlusIcon, TrashIcon } from "lucide-react"
 import Swal2 from "sweetalert2"
 
-export function TableNivelFormacion() {
+export function TableActividad() {
     const [data, setData] = useState([]);
+    const [dataProyectoFase, setDataProyectoFase] = useState([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedRow, setSelectedRow] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -23,11 +24,10 @@ export function TableNivelFormacion() {
         setIsLoading(true);
         setError(null);
         try {
-            const response = await Service.get("/nivelformacion/");
-            console.log("Datos recibidos del backend:", response);
+            const response = await Service.get("/actividad/");
             setData(response || []);
         } catch (error) {
-            console.error("Error al obtener niveles de formación:", error);
+            console.error("Error al obtener las horarios:", error);
             setError("Error al cargar los datos. Intente de nuevo más tarde.");
             setData([]);
         } finally {
@@ -35,9 +35,25 @@ export function TableNivelFormacion() {
         }
     }, []);
 
+    const fetchProyectoFase = async () => {
+        try {
+            const response = await Service.get("/proyectofase/")
+
+            dataProyectoFase(response.map((item) => ({
+                value: item.id,
+                label: item.nombre,
+            }))
+            )
+        } catch (error) {
+            console.error("Error al obtener los proyecto fases:", error)
+            dataProyectoFase([])
+        }
+    }
+
     useEffect(() => {
         fetchData();
-    }, [fetchData]);
+        fetchProyectoFase()
+    }, []);
 
     const showSwal = (type, title, message = "", timer = 1500) => {
         Swal2.fire({
@@ -54,49 +70,48 @@ export function TableNivelFormacion() {
 
     const handleSubmit = async (formData) => {
         try {
-            if (!selectedRow) {
-                // Al crear, asignamos estado como true por defecto
-                formData.estado = true;
-            }
-
-            if (selectedRow) {
-                await Service.put(`/nivelformacion/${selectedRow.id}/`, formData);
-            } else {
-                await Service.post("/nivelformacion/", formData);
-            }
-            fetchData()
-            setIsModalOpen(false)
-            setSelectedRow(null)
-            showSwal("success", "Nivel de formación guardado exitosamente")
+          if (!selectedRow) {
+            formData.estado = true;
+          }
+    
+          if (selectedRow) {
+            await Service.put(`/actividad/${selectedRow.id}/`, formData);
+          } else {
+            await Service.post("/actividad/", formData);
+          }
+          fetchData()
+          setIsModalOpen(false)
+          setSelectedRow(null)
+          showSwal("success", "Actividad guardado exitosamente")
         } catch (error) {
-            console.error("Error al guardar el nivel de formación:", error)
-
-            // Verifica si viene una respuesta con errores del backend
-            const backendError = error?.response?.data
-
-            // Extrae los mensajes y los convierte a texto plano
-            let errorMessage = "Por favor, inténtalo de nuevo más tarde."
-            if (backendError) {
-                if (typeof backendError === "string") {
-                    errorMessage = backendError
-                } else if (Array.isArray(backendError.detail)) {
-                    errorMessage = backendError.detail.map((e) => e.msg || e).join("\n")
-                } else if (backendError.detail) {
-                    errorMessage = backendError.detail
-                } else {
-                    // Si es un objeto de campos
-                    errorMessage = Object.entries(backendError)
-                        .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(", ") : value}`)
-                        .join("\n")
-                }
+          console.error("Error al guardar la actividad:", error)
+    
+          // Verifica si viene una respuesta con errores del backend
+          const backendError = error?.response?.data
+    
+          // Extrae los mensajes y los convierte a texto plano
+          let errorMessage = "Por favor, inténtalo de nuevo más tarde."
+          if (backendError) {
+            if (typeof backendError === "string") {
+              errorMessage = backendError
+            } else if (Array.isArray(backendError.detail)) {
+              errorMessage = backendError.detail.map((e) => e.msg || e).join("\n")
+            } else if (backendError.detail) {
+              errorMessage = backendError.detail
+            } else {
+              // Si es un objeto de campos
+              errorMessage = Object.entries(backendError)
+                .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(", ") : value}`)
+                .join("\n")
             }
-            showSwal("error", "Error al guardar el nivel de formación", errorMessage)
+          }
+          showSwal("error", "Error al guardar la actividad", errorMessage)
         }
-    }
+      }
 
     const handleDelete = async (row) => {
         Swal2.fire({
-            title: "¿Estás seguro de eliminar este nivel de formación?",
+            title: "¿Estás seguro de eliminar la actividad?",
             text: "Esta acción no se puede deshacer.",
             icon: "warning",
             showCancelButton: true,
@@ -108,12 +123,12 @@ export function TableNivelFormacion() {
         }).then(async (result) => {
             if (result.isConfirmed) {
                 try {
-                    await Service.delete(`/nivelformacion/${row.id}/`)
-                    showSwal("success", "Nivel de formación eliminado correctamente")
+                    await Service.delete(`/actividad/${row.id}/`)
+                    showSwal("success", "Actividad eliminado correctamente")
                     fetchData()
                 } catch (error) {
-                    console.error("Error al eliminar el nivel de formación:", error)
-                    showSwal("error", "Error al eliminar el nivel de formación", "Inténtalo de nuevo más tarde.")
+                    console.error("Error al eliminar la actividad:", error)
+                    showSwal("error", "Error al eliminar la actividad", "Inténtalo de nuevo más tarde.")
                 }
             }
         })
@@ -130,31 +145,25 @@ export function TableNivelFormacion() {
     };
 
     const modalFields = [
-        { 
-            label: "Código", 
-            name: "codigo", 
-            type: "text",
-            required: true,
-            value: selectedRow?.codigo || "",
-        },
-        { 
-            label: "Nombre", 
-            name: "nombre", 
+        {
+            label: "Nombre",
+            name: "nombre",
             type: "text",
             required: true,
             value: selectedRow?.nombre || "",
         },
-        { 
-            label: "Duración", 
-            name: "duracion", 
-            type: "text",
+        {
+            label: "Proyecto fase",
+            name: "proyectofase_id",
+            type: "select",
             required: true,
-            value: selectedRow?.duracion || "",
+            value: selectedRow?.proyectofase_id || "",
+            options: dataProyectoFase
         },
         selectedRow
             ? {
-                name: "estado",
                 label: "Estado",
+                name: "estado",
                 type: "select",
                 options: [
                     { value: true, label: "Activo" },
@@ -165,20 +174,11 @@ export function TableNivelFormacion() {
     ].filter(Boolean);
 
     const columns = [
+        { name: "Nombre", selector: (row) => row.nombre, sortable: true },
         {
-            name: "Código",
-            selector: (row) => row.codigo,
-            sortable: true
-        },
-        {
-            name: "Nombre",
-            selector: (row) => row.nombre,
-            sortable: true
-        },
-        {
-            name: "Duración",
-            selector: (row) => row.duracion,
-            sortable: true
+            name: "Proyecto fase",
+            selector: (row) => dataProyectoFase.find((item) => item.value === row.proyectofase_id)?.label,
+            sortable: true,
         },
         {
             name: "Estado",
@@ -208,7 +208,7 @@ export function TableNivelFormacion() {
         <div className="mt-6 mb-8 space-y-6 bg-gradient-to-br from-blue-gray-50 mt-12 rounded-xl min-h-screen via-white to-white">
             <Card className="bg-gradient-to-br from-blue-gray-50 rounded-xl min-h-screen via-white to-white">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-2xl font-bold">Gestión de nivel de formación</CardTitle>
+                    <CardTitle className="text-2xl font-bold">Gestión de Actividad</CardTitle>
                     <Button
                         variant="filled"
                         size="sm"
@@ -219,7 +219,7 @@ export function TableNivelFormacion() {
                         }}
                     >
                         <PlusIcon className="h-4 w-4" />
-                        Agregar Nuevo
+                        Agregar nuevo
                     </Button>
                 </CardHeader>
                 <CardContent>
@@ -234,7 +234,7 @@ export function TableNivelFormacion() {
                 isOpen={isModalOpen}
                 onClose={handleCloseModal}
                 onSubmit={handleSubmit}
-                title={selectedRow ? "Editar nivel de formación" : "Crear Nuevo nivel de formación"}
+                title={selectedRow ? "Editar actividad" : "Crear nueva actividad"}
                 fields={modalFields}
                 initialData={selectedRow ? { ...selectedRow } : null}
             />
@@ -242,4 +242,4 @@ export function TableNivelFormacion() {
     );
 }
 
-export default TableNivelFormacion;
+export default TableActividad

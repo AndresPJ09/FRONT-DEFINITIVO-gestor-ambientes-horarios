@@ -23,9 +23,19 @@ export default function SignIn() {
         type: "success",
         message: "Inicio de sesión exitoso. Redirigiendo...",
       })
-      Cookies.set("menu", JSON.stringify(response.vistas_rol), { expires: 1 })
+      // Reducir el tamaño del menú antes de guardar en cookies
+      const menuResumen = response.vistas_rol.map(v => ({
+        vistaId: v.vistaId,
+        nombreVista: v.nombreVista,
+        RutaVista: v.RutaVista,
+        moduloId: v.moduloId,
+        nombreModulo: v.nombreModulo
+      }));
+
+      Cookies.set("menu", JSON.stringify(menuResumen), { expires: 1 });
+
       Cookies.set("user", response.usuario_id, { expires: 1 })
-      Cookies.set("rol", response.nombre_rol, {expires: 1})
+      Cookies.set("rol", response.nombre_rol, { expires: 1 })
       setTimeout(() => {
         window.location.href = "/dashboard/home"
       }, 1000)

@@ -35,6 +35,7 @@ import TableCompetencia from "./pages/dashboard/AmbiHorario/Competencia";
 import TableFicha from "./pages/dashboard/AmbiHorario/Ficha";
 import TableInstructorHorario from "./pages/dashboard/AmbiHorario/InstructorHorario";
 import TableHorario from "./pages/dashboard/AmbiHorario/Horario";
+import TableActividad from "./pages/dashboard/AmbiHorario/Actividad";
 
 
 const icon = {
@@ -201,8 +202,13 @@ export const routes = [
         element: <TableCompetencia/>
       },
       {
+        name: "actividad",
+        path: "/actividad",
+        element: <TableActividad/>
+      },
+      {
         name: "ficha",
-        path: "/ficha",
+        path: "ficha",
         element: <TableFicha/>
       },
       {
@@ -215,7 +221,6 @@ export const routes = [
         path: "/instructorhorario",
         element: <TableInstructorHorario/>
       },
-      
     ],
   },
   {

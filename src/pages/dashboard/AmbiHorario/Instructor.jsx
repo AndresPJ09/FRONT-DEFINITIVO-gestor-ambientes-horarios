@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import {
-  Button,
+    Button,
 } from "@material-tailwind/react"
 import DataTableComponent from "@/widgets/datatable/data-table"
 import { Service } from "@/data/api"
@@ -270,33 +270,33 @@ export function TableInstructor() {
     };
 
     const modalFields = [
-        { 
-            label: "Nombres", 
-            name: "nombres", 
+        {
+            label: "Nombres",
+            name: "nombres",
             type: "text",
             required: true,
-            value: selectedRow?.nombres || "", 
+            value: selectedRow?.nombres || "",
         },
-        { 
-            label: "Apellidos", 
-            name: "apellidos", 
+        {
+            label: "Apellidos",
+            name: "apellidos",
             type: "text",
             required: true,
-            value: selectedRow?.apellidos || "", 
+            value: selectedRow?.apellidos || "",
         },
-        { 
-            label: "Identificación", 
-            name: "identificacion", 
+        {
+            label: "Identificación",
+            name: "identificacion",
             type: "text",
             required: true,
-            value: selectedRow?.identificacion || "", 
+            value: selectedRow?.identificacion || "",
         },
-        { 
-            label: "Correo", 
-            name: "correo", 
+        {
+            label: "Correo",
+            name: "correo",
             type: "text",
             required: true,
-            value: selectedRow?.correo || "", 
+            value: selectedRow?.correo || "",
         },
         {
             label: "Foto",
@@ -315,57 +315,57 @@ export function TableInstructor() {
                 </Button>
             )
         },
-        { 
-            label: "Tipo de vinculo", 
-            name: "tipo_vinculacion_id", 
-            type: "select",      
+        {
+            label: "Tipo de vinculo",
+            name: "tipo_vinculacion_id",
+            type: "select",
             required: true,
-            value: selectedRow?.tipo_vinculacion_id || "", 
-            options: dataTipoVinculo 
+            value: selectedRow?.tipo_vinculacion_id || "",
+            options: dataTipoVinculo
         },
         {
-            label: "Especialidad", 
-             name: "especialidad", 
-             type: "text",
-             required: true,
-             value: selectedRow?.especialidad || "", 
-            },
-        { 
-            label: "Fecha inicio", 
-            name: "fecha_inicio", 
+            label: "Especialidad",
+            name: "especialidad",
+            type: "text",
+            required: true,
+            value: selectedRow?.especialidad || "",
+        },
+        {
+            label: "Fecha inicio",
+            name: "fecha_inicio",
             type: "date",
             required: true,
-            value: selectedRow?.fecha_inicio || "", 
-            minDate: formData.fecha_inicio 
+            value: selectedRow?.fecha_inicio || "",
+            minDate: formData.fecha_inicio
         },
-        { 
-            label: "Fecha fin", 
-            name: "fecha_finalizacion", 
+        {
+            label: "Fecha fin",
+            name: "fecha_finalizacion",
             type: "date",
             required: true,
-            value: selectedRow?.fecha_finalizacion || "", 
-            maxDate: formData.fecha_finalizacion 
+            value: selectedRow?.fecha_finalizacion || "",
+            maxDate: formData.fecha_finalizacion
         },
-        { 
-            label: "Horas de ingreso", 
-            name: "hora_ingreso", 
+        {
+            label: "Horas de ingreso",
+            name: "hora_ingreso",
             type: "time",
             required: true,
-            value: selectedRow?.hora_ingreso || "", 
+            value: selectedRow?.hora_ingreso || "",
         },
-        { 
-            label: "Horas de egreso", 
-            name: "hora_egreso", 
+        {
+            label: "Horas de egreso",
+            name: "hora_egreso",
             type: "time",
             required: true,
-            value: selectedRow?.hora_egreso || "", 
+            value: selectedRow?.hora_egreso || "",
         },
-        { 
-            label: "Horas asignadas", 
-            name: "horas_asignadas", 
+        {
+            label: "Horas asignadas",
+            name: "horas_asignadas",
             type: "number",
             required: true,
-            value: selectedRow?.horas_asignadas || "", 
+            value: selectedRow?.horas_asignadas || "",
         },
         selectedRow
             ? {
@@ -418,21 +418,21 @@ export function TableInstructor() {
         {
             name: "Acciones",
             cell: (row) => (
-              <div className="flex items-center gap-2">
-                <Button color="green" size="sm" className="flex items-center gap-2" onClick={() => handleAction(row)}>
-                  <CheckIcon className="h-4 w-4" />
-                </Button>
-                <Button color="red" size="sm" className="flex items-center gap-2" onClick={() => handleDelete(row)}>
-                  <TrashIcon className="h-4 w-4" />
-                </Button>
-              </div>
+                <div className="flex items-center gap-2">
+                    <Button color="green" size="sm" className="flex items-center gap-2" onClick={() => handleAction(row)}>
+                        <CheckIcon className="h-4 w-4" />
+                    </Button>
+                    <Button color="red" size="sm" className="flex items-center gap-2" onClick={() => handleDelete(row)}>
+                        <TrashIcon className="h-4 w-4" />
+                    </Button>
+                </div>
             ),
             ignoreRowClick: true,
             allowOverflow: true,
             button: true,
             width: "150px",
-          },
-        ]
+        },
+    ]
 
     return (
         <div className="mt-6 mb-8 space-y-6 bg-gradient-to-br from-blue-gray-50 mt-12 rounded-xl min-h-screen via-white to-white">
@@ -440,7 +440,7 @@ export function TableInstructor() {
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-2xl font-bold">Gestión de instructor</CardTitle>
                     <Button
-                        variant="default"
+                        variant="filled"
                         size="sm"
                         className="flex items-center gap-2"
                         onClick={() => {
