@@ -65,23 +65,22 @@ export function InstructorHorario() {
 
     const filtrarPorUsuario = async () => {
         try {
-          const data = await Service.get(`instructorhorario/usuario/${filtroUsuario}/`)
-          if (data.length === 0) {
-            Swal.fire({
-              icon: 'warning',
-              title: 'No hay registros',
-              text: 'No se encontraron horarios para el usuario seleccionado.',
-              confirmButtonText: 'Aceptar'
-            });
-            return;
-          }
-          setData(data);
+            const data = await Service.get(`instructorhorario/usuario/${filtroUsuario}/`)
+            if (data.length === 0) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'No hay registros',
+                    text: 'No se encontraron horarios para el usuario seleccionado.',
+                    confirmButtonText: 'Aceptar'
+                });
+                return;
+            }
+            setData(data);
         } catch (error) {
-          console.error("Error al filtrar horarios por usuario:", error);
+            console.error("Error al filtrar horarios por usuario:", error);
         }
-      };
-      
-    
+    };
+
     const filtrarPorPeriodo = async () => {
         try {
             const data = await Service.get(`/instructorhorario/periodo/${filtroPeriodo}/`);
@@ -120,46 +119,46 @@ export function InstructorHorario() {
         { name: "Programa", selector: (row) => row.programa_nombre, sortable: true },
         { name: "Nivel de formación", selector: (row) => row.nivelformacion_nombre, sortable: true },
         { name: "Ficha", selector: (row) => row.ficha_codigo, sortable: true },
-        { 
-            name: "Ambiente", 
+        {
+            name: "Ambiente",
             selector: (row) => `${row.ambiente_codigo} ${row.ambiente_nombre}`,
-            sortable: true 
+            sortable: true
         },
-        { 
-            name: "Jornada programa", 
+        {
+            name: "Jornada programa",
             selector: (row) => row.instructor_jornada_programada,
-            sortable: true 
+            sortable: true
         },
-        { 
-            name: "Instructor", 
+        {
+            name: "Instructor",
             selector: (row) => `${row.instructor_nombres} ${row.instructor_apellidos}`,
-            sortable: true 
+            sortable: true
         },
-        { 
-            name: "Fecha inicio y hora", 
+        {
+            name: "Fecha inicio y hora",
             selector: (row) => formatDateTime(row.instructor_fecha_inicio_hora_ingreso),
-            sortable: true 
+            sortable: true
         },
-        { 
-            name: "Fecha fin y hora", 
+        {
+            name: "Fecha fin y hora",
             selector: (row) => formatDateTime(row.instructor_fecha_fin_hora_egreso),
-            sortable: true 
+            sortable: true
         },
         { name: "Horas", selector: (row) => row.instructor_horas, sortable: true },
         { name: "Observaciones", selector: (row) => row.observaciones, sortable: true },
-        { 
-            name: "Estado", 
+        {
+            name: "Estado",
             selector: (row) => row.estado ? "Activo" : "Inactivo",
-            sortable: true 
+            sortable: true
         }
     ];
 
     return (
         <div className="mt-6 mb-8 space-y-6 bg-gradient-to-br from-blue-gray-50 mt-12 rounded-xl min-h-screen via-white to-white">
-        <Card className="bg-gradient-to-br from-blue-gray-50 rounded-xl min-h-screen via-white to-white">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <Card className="bg-gradient-to-br from-blue-gray-50 rounded-xl min-h-screen via-white to-white">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-2xl font-bold">Horarios de Instructores</CardTitle>
-                    
+
                     <div className="flex flex-col md:flex-row gap-4">
                         <div className="w-full md:w-1/3">
                             <label className="block text-sm font-medium text-gray-700 mb-1">Filtrar por gestor</label>
@@ -187,7 +186,7 @@ export function InstructorHorario() {
                                 <option value="">Todos los períodos</option>
                                 {periodos.map((periodo) => (
                                     <option key={periodo.id} value={periodo.id}>
-                                       {periodo.nombre} ({periodo.fecha_inicio} - {periodo.fecha_fin})
+                                        {periodo.nombre} ({periodo.fecha_inicio} - {periodo.fecha_fin})
                                     </option>
                                 ))}
                             </select>
@@ -205,7 +204,7 @@ export function InstructorHorario() {
                         </div>
                     </div>
                 </CardHeader>
-                
+
                 <CardContent>
                     {error ? (
                         <div className="text-red-500">{error}</div>

@@ -94,7 +94,6 @@ export function TableFicha() {
         })
     }
 
-
     // Función mejorada para manejar cambios
     const handleInputChange = (name, value) => {
         const newFormData = { ...formData, [name]: value };
@@ -248,7 +247,6 @@ export function TableFicha() {
         setTimeout(() => setNotification(null), 5000)
     }
 
-
     const modalFields = [
         {
             label: "Código",
@@ -393,9 +391,9 @@ export function TableFicha() {
                 title={selectedRow ? "Editar ficha" : "Crear Nuevo ficha"}
                 fields={modalFields}
                 initialData={formData} // Cambiar a formData
-                onInputChange={handleInputChange} // Pasar la función de manejo
-                minDateForEnd={formData.fecha_inicio} // Para bloquear fechas anteriores
-                maxDateForStart={formData.fecha_fin} // Para bloquear fechas posteriores
+                onInputChange={handleInputChange} 
+                minDateForEnd={formData.fecha_inicio}
+                maxDateForStart={formData.fecha_fin} 
                 minDateForLectiva={formData.fecha_fin}
             />
         </div>

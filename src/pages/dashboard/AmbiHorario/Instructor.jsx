@@ -29,7 +29,6 @@ export function TableInstructor() {
         }
     }, [isModalOpen, selectedRow]);
 
-
     const fetchData = useCallback(async () => {
         setIsLoading(true);
         setError(null);
@@ -131,7 +130,7 @@ export function TableInstructor() {
 
     const handleDelete = async (row) => {
         Swal2.fire({
-            title: "¿Estás seguro de eliminar este ambiente?",
+            title: "¿Estás seguro de eliminar este instructor?",
             text: "Esta acción no se puede deshacer.",
             icon: "warning",
             showCancelButton: true,
@@ -143,8 +142,8 @@ export function TableInstructor() {
         }).then(async (result) => {
             if (result.isConfirmed) {
                 try {
-                    await Service.delete(`/I nstructor/${row.id}/`)
-                    showSwal("success", "instructor eliminado correctamente")
+                    await Service.delete(`/instructor/${row.id}/`)
+                    showSwal("success", "Instructor eliminado correctamente")
                     fetchData()
                 } catch (error) {
                     console.error("Error al eliminar el instructor:", error)

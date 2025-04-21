@@ -84,7 +84,6 @@ export function TablePeriodo() {
         }
       }
     }
-
     setFormData(newFormData);
   };
 
@@ -143,7 +142,7 @@ export function TablePeriodo() {
 
   const handleDelete = async (row) => {
     Swal2.fire({
-      title: "¿Estás seguro de eliminar este ambiente?",
+      title: "¿Estás seguro de eliminar este periodo?",
       text: "Esta acción no se puede deshacer.",
       icon: "warning",
       showCancelButton: true,

@@ -26,7 +26,6 @@ export function DynamicModal({
 
   useEffect(() => {
     if (initialData) {
-      // Inicializar formData con los datos iniciales
       const initialFormData = { ...initialData };
 
       // Procesar campos de archivo para crear vistas previas
@@ -43,7 +42,7 @@ export function DynamicModal({
       setFormData({});
       setFilePreviews({});
     }
-  }, [isOpen, initialData, fields]);
+  }, [isOpen]);
 
   const handleFileChange = (name, event) => {
     const file = event.target.files[0];
@@ -162,21 +161,22 @@ export function DynamicModal({
                 onChange={(date) => handleInputChange(field.name, date)}
                 placeholder={field.label}
                 minDate={
-                  field.name === 'fecha_fin' || field.name === 'fecha_finalizacion' ?
-                    (minDateForEnd ? new Date(minDateForEnd) : undefined) :
-                    field.name === 'fin_lectiva' ?
-                      (minDateForLectiva ? new Date(minDateForLectiva) : undefined) :
-                      undefined
+                  field.name === 'fecha_fin' || field.name === 'fecha_finalizacion' || field.name === 'fecha_fin_actividad'
+                    ? minDateForEnd
+                    : field.name === 'fin_lectiva'
+                      ? minDateForLectiva
+                      : undefined
                 }
                 maxDate={
-                  field.name === 'fecha_inicio' ?
-                    (maxDateForStart ? new Date(maxDateForStart) : undefined) :
-                    undefined
+                  field.name === 'fecha_inicio' || field.name === 'fecha_inicio_actividad'
+                    ? maxDateForStart
+                    : undefined
                 }
               />
             </div>
           </div>
         );
+
       case "file":
         return (
           <div key={field.name} className="grid gap-2">

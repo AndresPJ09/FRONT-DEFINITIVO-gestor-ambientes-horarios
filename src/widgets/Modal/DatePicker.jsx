@@ -9,8 +9,8 @@ export function DatePicker({
     value, 
     onChange, 
     placeholder, 
-    minDate,  // Nueva prop para fecha mínima
-    maxDate,  // Nueva prop para fecha máxima
+    minDate,  
+    maxDate,
     ...props 
 }) {
     const inputRef = useRef(null);

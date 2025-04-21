@@ -36,6 +36,9 @@ import TableFicha from "./pages/dashboard/AmbiHorario/Ficha";
 import TableInstructorHorario from "./pages/dashboard/AmbiHorario/InstructorHorario";
 import TableHorario from "./pages/dashboard/AmbiHorario/Horario";
 import TableActividad from "./pages/dashboard/AmbiHorario/Actividad";
+import TableProyectoFase from "./pages/dashboard/AmbiHorario/ProyectoFase";
+import TableActividadFase from "./pages/dashboard/AmbiHorario/ActividadFase";
+import TableConsolidadoAmbiente from "./pages/dashboard/AmbiHorario/ConsolidadoAmbiente";
 
 
 const icon = {
@@ -202,9 +205,19 @@ export const routes = [
         element: <TableCompetencia/>
       },
       {
+        name: "proyectofase",
+        path: "/proyectofase",
+        element: <TableProyectoFase/>
+      },
+      {
         name: "actividad",
         path: "/actividad",
         element: <TableActividad/>
+      },
+      {
+        name: "actividadfase",
+        path: "/actividadfase",
+        element: <TableActividadFase/>
       },
       {
         name: "ficha",
@@ -220,6 +233,11 @@ export const routes = [
         name: "instructorhorario",
         path: "/instructorhorario",
         element: <TableInstructorHorario/>
+      },
+      {
+        name: "consolidadoambiente",
+        path: "/consolidadoambiente",
+        element: <TableConsolidadoAmbiente/>
       },
     ],
   },

@@ -39,14 +39,14 @@ export function TableActividad() {
         try {
             const response = await Service.get("/proyectofase/")
 
-            dataProyectoFase(response.map((item) => ({
+            setDataProyectoFase(response.map((item) => ({
                 value: item.id,
-                label: item.nombre,
+                label: item.proyecto_fase_nombre,
             }))
             )
         } catch (error) {
             console.error("Error al obtener los proyecto fases:", error)
-            dataProyectoFase([])
+            setDataProyectoFase([])
         }
     }
 
