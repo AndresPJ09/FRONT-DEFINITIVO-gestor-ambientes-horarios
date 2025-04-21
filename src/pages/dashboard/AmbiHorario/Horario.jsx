@@ -22,7 +22,7 @@ export function TableHorario() {
     const [programas, setProgramas] = useState([]);
     const [niveles, setNiveles] = useState([]);
     const [proyectos, setProyectos] = useState([]);
-    const [fases, setFases] = useState([]);
+    //const [fases, setFases] = useState([]);
 
     // Estados de modal / formulario
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -37,7 +37,7 @@ export function TableHorario() {
     const [fechaFinSeleccionado, setFechaFinSeleccionado] = useState('');
     const [finlectivaSeleccionado, setFinLectivaSeleccionado] = useState('');
     const [jornadaTecnicaSeleccionado, setJornadaTecnicaSeleccionado] = useState('');
-    const [faseSeleccionada, setFaseSeleccionada] = useState("");
+    //const [faseSeleccionada, setFaseSeleccionada] = useState("");
 
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -57,18 +57,18 @@ export function TableHorario() {
                     Service.get("/programa/"),
                     Service.get("/nivelformacion/"),
                     Service.get("/proyecto/"),
-                    Service.get("/fase/")
+                    //Service.get("/fase/")
                 ]);
             setData(data || []);
             setUsuarios(usuarios.map(u => ({ value: u.id, label: `${u.nombres} ${u.apellidos}` })));
             setFichas(fichas.map(f => ({ value: f.id, label: f.codigo })));
-            setAmbientes(ambientes.map(a => ({ value: a.id, label: a.nombre })));
+            setAmbientes(ambientes.map(a => ({ value: a.id, label: `${a.codigo} ${a.nombre}` })));
             setPeriodos(periodos.map(p => ({ value: p.id, label: `${p.nombre} (${p.fecha_inicio} - ${p.fecha_fin})` })));
             setInstructores(instructores.map(i => ({ value: i.id, label: i.nombres })));
             setProgramas(programas.map(p => ({ value: p.id, label: p.nombre, nivel_formacion_id: p.nivel_formacion_id })));
             setNiveles(niveles.map(n => ({ value: n.id, label: n.nombre })));
             setProyectos(proyectos.map(pj => ({ value: pj.id, label: pj.nombre, jornada_tecnica: pj.jornada_tecnica })));
-            setFases(fases.map(fa => ({ value: fa.id, label: fa.nombre })));
+            //setFases(fases.map(fa => ({ value: fa.id, label: fa.nombre })));
         } catch (e) {
             console.error(e);
             setError("Error al cargar datos. Intente de nuevo más tarde.");
@@ -87,7 +87,7 @@ export function TableHorario() {
         else {
             setProgramaSeleccionado(""); setNivelSeleccionado(""); setProyectoSeleccionado("");
             setJornadaTecnicaSeleccionado(""); setFechaInicioSeleccionado(""); setFechaFinSeleccionado("");
-            setFinLectivaSeleccionado(""); setFaseSeleccionada("");
+            setFinLectivaSeleccionado(""); //setFaseSeleccionada("");
         }
     }, [isModalOpen, selectedRow]);
 
@@ -225,17 +225,27 @@ export function TableHorario() {
         })
     }
 
+    const handleAction = (row) => {
+        setSelectedRow(row);
+        setIsModalOpen(true);
+    };
+
+    const handleCloseModal = () => {
+        setIsModalOpen(false);
+        setSelectedRow(null);
+    };
+
     // Definición de campos del modal
     const modalFields = [
         { label: "Usuario", name: "usuario_id", type: "select", required: true, value: formData.usuario_id || "", options: usuarios },
         { label: "Programa", name: "", type: "text", readOnly: true, value: programaSeleccionado },
         { label: "Nivel formación", name: "", type: "text", readOnly: true, value: nivelSeleccionado },
-        { label: "Ficha", name: "ficha_id", type: "select", required: true, value: formData.ficha_id || "", options: fichas, onChange: handleInputChange },
+        { label: "Ficha", name: "ficha_id", type: "select", required: true, value: formData.ficha_id || "", options: fichas, onChange: handleFichaChange},
         { label: "Ambiente", name: "ambiente_id", type: "select", required: true, value: formData.ambiente_id || "", options: ambientes },
         { label: "Proyecto", name: "", type: "text", readOnly: true, value: proyectoSeleccionado },
-        { label: "Fecha inicio", name: "fecha_inicio", type: "date", required: true, value: fechaInicioSeleccionado },
-        { label: "Fecha fin", name: "fecha_fin", type: "date", required: true, value: fechaFinSeleccionado },
-        { label: "Fin lectiva", name: "fin_lectiva", type: "date", required: true, value: finlectivaSeleccionado },
+        { label: "Fecha inicio", name: "fecha_inicio", type: "date", required: true, value: fechaInicioSeleccionado, onChange: setFechaInicioSeleccionado},
+        { label: "Fecha fin", name: "fecha_fin", type: "date", required: true, value: fechaFinSeleccionado, onChange: setFechaFinSeleccionado},
+        { label: "Fin lectiva", name: "fin_lectiva", type: "date", required: true, value: finlectivaSeleccionado, onChange: setFinLectivaSeleccionado},
         { label: "Jornada técnica", name: "jornada_tecnica", readOnly: true, type: "text", value: jornadaTecnicaSeleccionado },
         { label: "Fase", name: "", type: "text", readOnly: true, value: faseSeleccionada },
         { label: "Periodo", name: "periodo_id", type: "select", required: true, value: formData.periodo_id || "", options: periodos },

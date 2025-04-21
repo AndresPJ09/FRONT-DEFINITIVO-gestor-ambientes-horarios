@@ -234,12 +234,7 @@ export function TableFicha() {
     const handleCloseModal = () => {
         setIsModalOpen(false);
         setSelectedRow(null);
-        setFormData((prevFormData) => ({
-            ...prevFormData,
-            fecha_inicio: "",
-            fecha_fin: "",
-            fin_lectiva: "",
-        }));
+        setFormData(row || {});
     };
 
     const showNotification = (type, message) => {

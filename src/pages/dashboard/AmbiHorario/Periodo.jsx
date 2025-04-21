@@ -173,6 +173,7 @@ export function TablePeriodo() {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedRow(null);
+    setFormData(row || {});
     setFormData({});
   };
 

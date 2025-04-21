@@ -155,7 +155,7 @@ export function TablePrograma() {
       name: "codigo",
       type: "text",
       required: true,
-      value: selectedRow?.modulo_id || ""
+      value: selectedRow?.codigo || ""
     },
     {
       label: "Nombre",
