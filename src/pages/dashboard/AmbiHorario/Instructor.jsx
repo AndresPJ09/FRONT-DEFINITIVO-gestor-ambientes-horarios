@@ -20,14 +20,10 @@ export function TableInstructor() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
     const [imagenModal, setImagenModal] = useState(null);
-    const [formData, setFormData] = useState({});
-    const [notification, setNotification] = useState(null);
-
-    useEffect(() => {
-        if (isModalOpen) {
-            setFormData(selectedRow || {});
-        }
-    }, [isModalOpen, selectedRow]);
+    const [tempDates, setTempDates] = useState({
+        fecha_inicio: null,
+        fecha_finalizacion: null
+    });
 
     const fetchData = useCallback(async () => {
         setIsLoading(true);
@@ -78,21 +74,18 @@ export function TableInstructor() {
     }
 
     const handleSubmit = async (formData) => {
-
         // Validación final de fechas
-        const fechaInicio = data.fecha_inicio ? new Date(data.fecha_inicio) : null;
-        const fechaFin = data.fecha_finalizacion ? new Date(data.fecha_finalizacion) : null;
+        const fechaInicio = formData.fecha_inicio ? new Date(formData.fecha_inicio) : null;
+        const fechaFin = formData.fecha_finalizacion ? new Date(formData.fecha_finalizacion) : null;
 
         if (fechaInicio && fechaFin && fechaFin < fechaInicio) {
-            showNotification('red', 'La fecha de finalización no puede ser anterior a la fecha de inicio');
+            showSwal('red', 'La fecha de finalización no puede ser anterior a la fecha de inicio');
             return;
         }
-        console.log('Datos enviados al submit:', formData);
         try {
             if (!selectedRow) {
                 formData.estado = true;
             }
-
             if (selectedRow) {
                 await Service.put(`/instructor/${selectedRow.id}/`, formData);
             } else {
@@ -154,58 +147,47 @@ export function TableInstructor() {
     }
 
     const handleAction = (row) => {
-        setFormData({
+        setSelectedRow({
             ...row,
-            foto: row.foto || null,
-            fotoPreview: row.foto ? `data:image/jpeg;base64,${row.foto}` : '',
+            fotoPreview: row.foto ? `data:image/jpeg;base64,${row.foto}` : null
         });
-        setSelectedRow(row);
+        setTempDates({
+            fecha_inicio: row.fecha_inicio,
+            fecha_finalizacion: row.fecha_finalizacion
+        });
         setIsModalOpen(true);
     };
 
     const handleCloseModal = () => {
         setIsModalOpen(false);
         setSelectedRow(null);
+        setTempDates({ fecha_inicio: null, fecha_finalizacion: null });
     };
 
-    const showNotification = (type, message) => {
-        setNotification({ type, message })
-        setTimeout(() => setNotification(null), 5000)
-    }
-
     const handleInputChange = (name, value) => {
-        const newFormData = { ...formData, [name]: value };
+        // Actualizar fechas temporales para validación
+        if (name === 'fecha_inicio' || name === 'fecha_fin') {
+            setTempDates(prev => ({
+                ...prev,
+                [name]: value
+            }));
 
-        // Validación para todos los casos posibles de fechas
-        const fechaInicio = newFormData.fecha_inicio ? new Date(newFormData.fecha_inicio) : null;
-        const fechaFin = newFormData.fecha_fin ? new Date(newFormData.fecha_fin) : null;
-        const fechaFinalizacion = newFormData.fecha_finalizacion ? new Date(newFormData.fecha_finalizacion) : null;
+            const fechaInicio = name === 'fecha_inicio' ? new Date(value) : null;
+            const fechaFin = name === 'fecha_finalizacion' ? new Date(value) : null;
 
-        // Validar fecha_fin vs fecha_inicio
-        if (fechaInicio && fechaFin && fechaFin < fechaInicio) {
-            showNotification('red', 'La fecha fin no puede ser anterior a la fecha inicio');
-            return;
+            if (fechaInicio && fechaFin && fechaFin < fechaInicio) {
+                showSwal('red', 'La fecha fin no puede ser anterior a la fecha inicio');
+            }
         }
-
-        // Validar fecha_finalizacion vs fecha_inicio
-        if (fechaInicio && fechaFinalizacion && fechaFinalizacion < fechaInicio) {
-            showNotification('red', 'La fecha de finalización no puede ser anterior a la fecha de inicio');
-            return;
-        }
-
-        setFormData(newFormData);
-        if (onInputChange) onInputChange(name, value);
     };
 
     const handleFileChange = (e) => {
         const file = e.target.files[0];
-
         if (!file) return;
-
         // Validar tipo de archivo
         const validTypes = ["image/png", "image/jpeg", "image/jpg"];
         if (!validTypes.includes(file.type)) {
-            Swal.fire({
+            Swal2.fire({
                 title: "Formato no válido",
                 text: "Solo se permiten archivos PNG, JPG y JPEG",
                 icon: "error",
@@ -214,11 +196,10 @@ export function TableInstructor() {
             e.target.value = "";
             return;
         }
-
         // Validar tamaño (ejemplo: máximo 2MB)
         const maxSize = 2 * 1024 * 1024; // 2MB
         if (file.size > maxSize) {
-            Swal.fire({
+            Swal2.fire({
                 title: "Archivo demasiado grande",
                 text: "El tamaño máximo permitido es 2MB",
                 icon: "error",
@@ -227,7 +208,6 @@ export function TableInstructor() {
             e.target.value = "";
             return;
         }
-
         const reader = new FileReader();
         reader.onloadend = () => {
             const base64String = reader.result.split(",")[1];
@@ -238,7 +218,7 @@ export function TableInstructor() {
             });
         };
         reader.onerror = () => {
-            Swal.fire({
+            Swal2.fire({
                 title: "Error",
                 text: "Ocurrió un error al leer la imagen",
                 icon: "error",
@@ -260,12 +240,10 @@ export function TableInstructor() {
             fotoFile: '',
             shouldDeleteImage: true,
         });
-
         console.log('Estado después de eliminar imagen:', {
             foto: null,
             shouldDeleteImage: true
         });
-
     };
 
     const modalFields = [
@@ -305,7 +283,8 @@ export function TableInstructor() {
             extraContent: (
                 <Button
                     type="button"
-                    variant="destructive"
+                    variant="filled"  // Cambiado de "destructive" a "filled"
+                    color="red"
                     size="sm"
                     className="mt-2"
                     onClick={handleEliminarImagen}
@@ -335,7 +314,6 @@ export function TableInstructor() {
             type: "date",
             required: true,
             value: selectedRow?.fecha_inicio || "",
-            minDate: formData.fecha_inicio
         },
         {
             label: "Fecha fin",
@@ -343,7 +321,6 @@ export function TableInstructor() {
             type: "date",
             required: true,
             value: selectedRow?.fecha_finalizacion || "",
-            maxDate: formData.fecha_finalizacion
         },
         {
             label: "Horas de ingreso",
@@ -417,7 +394,9 @@ export function TableInstructor() {
         {
             name: "Acciones",
             cell: (row) => (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2"
+                    style={{ overflow: 'visible' }}
+                    onClick={e => e.stopPropagation()}>
                     <Button color="green" size="sm" className="flex items-center gap-2" onClick={() => handleAction(row)}>
                         <CheckIcon className="h-4 w-4" />
                     </Button>
@@ -426,10 +405,10 @@ export function TableInstructor() {
                     </Button>
                 </div>
             ),
-            ignoreRowClick: true,
-            allowOverflow: true,
-            button: true,
-            width: "150px",
+            //ignoreRowClick: true,
+            //allowOverflow: true,
+            //button: true,
+            //width: "150px",
         },
     ]
 
@@ -444,6 +423,7 @@ export function TableInstructor() {
                         className="flex items-center gap-2"
                         onClick={() => {
                             setSelectedRow(null)
+                            setTempDates({ fecha_inicio: null, fecha_finalizacion: null });
                             setIsModalOpen(true)
                         }}
                     >
@@ -465,10 +445,10 @@ export function TableInstructor() {
                 onSubmit={handleSubmit}
                 title={selectedRow ? "Editar instructor" : "Crear Nuevo instructor"}
                 fields={modalFields}
-                initialData={formData}
+                initialData={selectedRow ? { ...selectedRow } : null}
                 onInputChange={handleInputChange}
-                minDateForEnd={formData.fecha_inicio}
-                maxDateForStart={formData.fecha_finalizacion}
+                minDateForEnd={selectedRow?.fecha_inicio || tempDates.fecha_inicio}
+                maxDateForStart={selectedRow?.fecha_finalizacion || tempDates.fecha_finalizacion}
             />
             {/* Modal para imagen ampliada */}
             {imagenModal && (

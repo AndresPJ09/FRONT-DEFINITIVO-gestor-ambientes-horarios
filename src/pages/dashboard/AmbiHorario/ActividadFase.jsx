@@ -20,13 +20,10 @@ export function TableActividadFase() {
     const [selectedRow, setSelectedRow] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [formData, setFormData] = useState({});
-
-    useEffect(() => {
-        if (isModalOpen) {
-            setFormData(selectedRow || {});
-        }
-    }, [isModalOpen, selectedRow]);
+    const [tempDates, setTempDates] = useState({
+        fecha_inicio_actividad: null,
+        fecha_fin_actividad: null
+    });
 
     const fetchData = useCallback(async () => {
         setIsLoading(true);
@@ -91,35 +88,13 @@ export function TableActividadFase() {
         })
     }
 
-    const handleInputChange = (name, value) => {
-        const newFormData = { ...formData, [name]: value };
-
-        // Validación cruzada de fechas
-        if (name === 'fecha_inicio_actividad' || name === 'fecha_fin_actividad') {
-            const fechaInicio = newFormData.fecha_inicio_actividad ? new Date(newFormData.fecha_inicio_actividad) : null;
-            const fechaFin = newFormData.fecha_fin_actividad ? new Date(newFormData.fecha_fin_actividad) : null;
-
-            if (fechaInicio && fechaFin && fechaFin < fechaInicio) {
-                showNotification('red', 'La fecha fin no puede ser anterior a la fecha inicio');
-
-                // Revertir el cambio inválido
-                if (name === 'fecha_fin_actividad') {
-                    newFormData.fecha_fin_actividad = formData.fecha_fin_actividad;
-                } else {
-                    newFormData.fecha_inicio_actividad = formData.fecha_inicio_actividad;
-                }
-            }
-        }
-        setFormData(newFormData);
-    };
-    
     const handleSubmit = async (formData) => {
-        // Validación final de fechas
-        const fechaInicio = new Date(formData.fecha_inicio_actividad);
-        const fechaFin = new Date(formData.fecha_fin_actividad);
+        // Validación de fechas
+        const fechaInicio = formData.fecha_inicio_actividad ? new Date(formData.fecha_inicio_actividad) : null;
+        const fechaFin = formData.fecha_fin_actividad ? new Date(formData.fecha_fin_actividad) : null;
 
         if (fechaInicio && fechaFin && fechaFin < fechaInicio) {
-            alert("La fecha de fechaFin no puede ser anterior a la fecha de inicio.");
+            showSwal("error", "Error en las fechas", "La fecha fin no puede ser anterior a la fecha inicio");
             return;
         }
         console.log('Datos enviados al submit:', formData);
@@ -189,13 +164,43 @@ export function TableActividadFase() {
 
     const handleAction = (row) => {
         setSelectedRow(row);
+        setTempDates({
+            fecha_inicio: row.fecha_inicio_actividad,
+            fecha_fin: row.fecha_fin_actividad
+        });
         setIsModalOpen(true);
     };
 
     const handleCloseModal = () => {
         setIsModalOpen(false);
         setSelectedRow(null);
-        setFormData({});
+        setTempDates({ fecha_inicio_actividad: null, fecha_fin_actividad: null });
+    };
+
+    const calculateWeeks = (startDate, endDate) => {
+        if (!startDate || !endDate) return 0;
+        const diffTime = Math.abs(new Date(endDate) - new Date(startDate));
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        return Math.ceil(diffDays / 7);
+    };
+
+    const handleInputChange = (name, value) => {
+        if (name === 'fecha_inicio_actividad' || name === 'fecha_fin_actividad') {
+            setTempDates(prev => ({
+                ...prev,
+                [name]: value
+            }));
+            // Validación cruzada de fechas
+            if (name === 'fecha_inicio_actividad' || name === 'fecha_fin_actividad') {
+                const fechaInicio = name === 'fecha_inicio_actividad' ? new Date(value) : new Date(tempDates.fecha_inicio_actividad);
+                const fechaFin = name === 'fecha_fin_actividad' ? new Date(value) : new Date(tempDates.fecha_fin_actividad);
+
+                if (fechaInicio && fechaFin && fechaFin < fechaInicio) {
+                    showNotification('red', 'La fecha fin no puede ser anterior a la fecha inicio');
+                    return;
+                }
+            }
+        }
     };
 
     const modalFields = [
@@ -204,16 +209,21 @@ export function TableActividadFase() {
             name: "fecha_inicio_actividad",
             type: "date",
             required: true,
-            value: selectedRow?.fecha_inicio_actividad || "",
-            maxDate: formData.fecha_inicio_actividad,
+            value: selectedRow?.fecha_inicio_actividad || ""
         },
         {
             label: "Fecha fin de actividad",
             name: "fecha_fin_actividad",
             type: "date",
             required: true,
-            value: selectedRow?.fecha_fin_actividad || "",
-            minDate: formData.fecha_fin_actividad,
+            value: selectedRow?.fecha_fin_actividad || ""
+        },
+        {
+            label: "Número de semanas",
+            name: "numero_semanas",
+            type: "number",
+            readOnly: true,
+            className: "bg-gray-100"
         },
         {
             label: "Actividad",
@@ -236,6 +246,7 @@ export function TableActividadFase() {
     const columns = [
         { name: "Fecha de inicio de activfidad", selector: (row) => row.fecha_inicio_actividad, sortable: true },
         { name: "Fecha de fin de actividad", selector: (row) => row.fecha_fin_actividad, sortable: true },
+        { name: "Número de semanas", selector: (row) => row.numero_semanas, sortable: true },
         {
             name: "Actividad",
             selector: (row) => dataActividad.find((item) => item.value === row.actividad_id)?.label,
@@ -249,7 +260,9 @@ export function TableActividadFase() {
         {
             name: "Acciones",
             cell: (row) => (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2"
+                    style={{ overflow: 'visible' }}
+                    onClick={e => e.stopPropagation()}>
                     <Button color="green" size="sm" className="flex items-center gap-2" onClick={() => handleAction(row)}>
                         <CheckIcon className="h-4 w-4" />
                     </Button>
@@ -258,10 +271,10 @@ export function TableActividadFase() {
                     </Button>
                 </div>
             ),
-            ignoreRowClick: true,
-            allowOverflow: true,
-            button: true,
-            width: "150px",
+            //ignoreRowClick: true,
+            //allowOverflow: true,
+            //button: true,
+            //width: "150px",
         },
     ]
 
@@ -276,6 +289,7 @@ export function TableActividadFase() {
                         className="flex items-center gap-2"
                         onClick={() => {
                             setSelectedRow(null)
+                            setTempDates({ fecha_inicio_actividad: null, fecha_fin_actividad: null });
                             setIsModalOpen(true)
                         }}
                     >
@@ -297,12 +311,11 @@ export function TableActividadFase() {
                 onSubmit={handleSubmit}
                 title={selectedRow ? "Editar actividad fase" : "Crear Nuevo actividad fase"}
                 fields={modalFields}
-                initialData={formData}
+                initialData={selectedRow ? { ...selectedRow } : null}
                 onInputChange={handleInputChange}
-                minDateForEnd={formData.fecha_inicio_actividad}
-                maxDateForStart={formData.fecha_fin_actividad}
+                minDateForEnd={selectedRow?.fecha_inicio_actividad || tempDates.fecha_inicio_actividad}
+                maxDateForStart={selectedRow?.fecha_fin_actividad || tempDates.fecha_fin_actividad}
             />
-
         </div>
     );
 }

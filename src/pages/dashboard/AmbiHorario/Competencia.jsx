@@ -173,7 +173,9 @@ export function TableCompetencia() {
     {
       name: "Acciones",
       cell: (row) => (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2"
+            style={{ overflow: 'visible' }} 
+            onClick={e => e.stopPropagation()}>
           <Button color="green" size="sm" className="flex items-center gap-2" onClick={() => handleAction(row)}>
             <CheckIcon className="h-4 w-4" />
           </Button>
@@ -182,10 +184,10 @@ export function TableCompetencia() {
           </Button>
         </div>
       ),
-      ignoreRowClick: true,
-      allowOverflow: true,
-      button: true,
-      width: "150px",
+      //ignoreRowClick: true,
+      //allowOverflow: true,
+      //button: true,
+      //width: "150px",
     },
   ]
 

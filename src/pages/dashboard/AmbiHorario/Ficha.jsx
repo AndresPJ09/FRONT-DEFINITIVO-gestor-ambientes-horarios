@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import {
-  Button,
+    Button,
 } from "@material-tailwind/react"
 import DataTableComponent from "@/widgets/datatable/data-table"
 import { Service } from "@/data/api"
@@ -15,20 +15,17 @@ import Swal2 from "sweetalert2"
 export function TableFicha() {
     const [data, setData] = useState([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [selectedRow, setSelectedRow] = useState(null);
+    const [selectedRow, setSelectedRow] = useState();
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
     const [notification, setNotification] = useState(null);
     const [dataPrograma, setDataPrograma] = useState([]);
     const [dataProyecto, setDataProyecto] = useState([]);
-    const [formData, setFormData] = useState({});
-
-    // Agregar este useEffect para inicializar formData
-    useEffect(() => {
-        if (isModalOpen) {
-            setFormData(selectedRow || {});
-        }
-    }, [isModalOpen, selectedRow]);
+    const [tempDates, setTempDates] = useState({
+        fecha_inicio: null,
+        fecha_fin: null,
+        fin_lectiva: null,
+    });
 
     const fetchData = useCallback(async () => {
         setIsLoading(true);
@@ -79,7 +76,7 @@ export function TableFicha() {
         fetchData();
         fetchPrograma()
         fetchProyecto()
-    }, []);
+    }, [fetchData]);
 
     const showSwal = (type, title, message = "", timer = 1500) => {
         Swal2.fire({
@@ -94,74 +91,21 @@ export function TableFicha() {
         })
     }
 
-    // Función mejorada para manejar cambios
-    const handleInputChange = (name, value) => {
-        const newFormData = { ...formData, [name]: value };
-
-        // Validación cruzada de fechas
-        if (name === 'fecha_inicio' || name === 'fecha_fin' || name === 'fin_lectiva') {
-            const fechaInicio = newFormData.fecha_inicio ? new Date(newFormData.fecha_inicio) : null;
-            const fechaFin = newFormData.fecha_fin ? new Date(newFormData.fecha_fin) : null;
-            const finLectiva = newFormData.fin_lectiva ? new Date(newFormData.fin_lectiva) : null;
-
-            // Validar que fecha fin no sea anterior a inicio
-            if (fechaInicio && fechaFin && fechaFin < fechaInicio) {
-                showNotification('red', 'La fecha fin no puede ser anterior a la fecha inicio');
-                return;
-            }
-
-            // Validar que fin lectiva no sea anterior a fecha fin
-            if (fechaFin && finLectiva && finLectiva < fechaFin) {
-                showNotification('red', 'El fin lectiva no puede ser anterior a la fecha fin');
-                return;
-            }
-
-            // Calcular semanas si ambas fechas son válidas
-            if (fechaInicio && fechaFin && fechaFin >= fechaInicio) {
-                const diffTime = Math.abs(fechaFin - fechaInicio);
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                newFormData.numero_semanas = Math.ceil(diffDays / 7);
-            }
-        }
-
-        setFormData(newFormData);
-    };
-
-    document.addEventListener("DOMContentLoaded", function () {
-        function calcularSemanas() {
-            const startDateInput = document.querySelector("[name='fecha_inicio']");
-            const endDateInput = document.querySelector("[name='fecha_fin']");
-            const weeksInput = document.querySelector("[name='numero_semanas']");
-
-            if (startDateInput && endDateInput && weeksInput) {
-                const startDate = new Date(startDateInput.value);
-                const endDate = new Date(endDateInput.value);
-
-                if (!isNaN(startDate) && !isNaN(endDate) && endDate >= startDate) {
-                    const differenceInTime = endDate - startDate;
-                    const differenceInWeeks = Math.floor(differenceInTime / (1000 * 60 * 60 * 24 * 7));
-                    weeksInput.value = differenceInWeeks;
-                } else {
-                    weeksInput.value = "";
-                }
-            }
-        }
-
-        document.body.addEventListener("change", function (event) {
-            if (event.target.name === "fecha_inicio" || event.target.name === "fecha_fin") {
-                calcularSemanas();
-            }
-        });
-    });
-
     const handleSubmit = async (formData) => {
-        const fechaInicio = new Date(formData.fecha_inicio);
-        const fechaFin = new Date(formData.fecha_fin);
+        // Validación de fechas
+        const fechaInicio = formData.fecha_inicio ? new Date(formData.fecha_inicio) : null;
+        const fechaFin = formData.fecha_fin ? new Date(formData.fecha_fin) : null;
+        const finLectiva = formData.fin_lectiva ? new Date(formData.fin_lectiva) : null;
 
-        if (fechaFin < fechaInicio) {
-            showNotification('red', 'La fecha fin no puede ser anterior a la fecha inicio');
+        if (fechaInicio && fechaFin && fechaFin < fechaInicio) {
+            showSwal("error", "Error en las fechas", "La fecha fin no puede ser anterior a la fecha inicio");
             return;
         }
+        if (fechaFin && finLectiva && finLectiva < fechaFin) {
+            showSwal("error", "Error en las fechas", "El fin lectiva no puede ser anterior a la fecha fin");
+            return;
+        }
+
         try {
             if (!selectedRow) {
                 formData.estado = true;
@@ -228,19 +172,50 @@ export function TableFicha() {
 
     const handleAction = (row) => {
         setSelectedRow(row);
+        setTempDates({
+            fecha_inicio: row.fecha_inicio,
+            fecha_fin: row.fecha_fin,
+            fin_lectiva: row.fin_lectiva
+        });
         setIsModalOpen(true);
     };
 
     const handleCloseModal = () => {
         setIsModalOpen(false);
         setSelectedRow(null);
-        setFormData(row || {});
+        setTempDates({ fecha_inicio: null, fecha_fin: null, fin_lectiva: null });
     };
 
     const showNotification = (type, message) => {
         setNotification({ type, message })
         setTimeout(() => setNotification(null), 5000)
     }
+
+    const calculateWeeks = (startDate, endDate) => {
+        if (!startDate || !endDate) return 0;
+        const diffTime = Math.abs(new Date(endDate) - new Date(startDate));
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        return Math.ceil(diffDays / 7);
+    };
+
+    const handleInputChange = (name, value) => {
+          // Actualizar fechas temporales para validación
+    if (name === 'fecha_inicio' || name === 'fecha_fin') {
+        setTempDates(prev => ({
+          ...prev,
+          [name]: value
+        }));
+        // Cálculo automático de semanas
+        if (name === 'fecha_inicio' || name === 'fecha_fin') {
+            updatedRow.numero_semanas = calculateWeeks(
+                name === 'fecha_inicio' ? value : updatedRow.fecha_inicio,
+                name === 'fecha_fin' ? value : updatedRow.fecha_fin
+            );
+        }
+        }
+
+        setSelectedRow(updatedRow);
+    };
 
     const modalFields = [
         {
@@ -278,26 +253,29 @@ export function TableFicha() {
             name: "fecha_fin",
             type: "date",
             required: true,
-            value: selectedRow?.fecha_fin || "",
-        },
-        {
-            label: "Número de semanas",
-            name: "numero_semanas",
-            type: "number",
-            readOnly: true,
-            className: "bg-gray-100"
+            value: selectedRow?.fecha_fin || ""
         },
         {
             label: "Fin lectiva",
             name: "fin_lectiva",
             type: "date",
             required: true,
-            value: selectedRow?.fin_lectiva || "",
+            value: selectedRow?.fin_lectiva || ""
         },
-        { 
-            name: "cupo", 
-            label: "Cupo", 
-            type: "number" 
+        {
+            label: "Número de semanas",
+            name: "numero_semanas",
+            type: "number",
+            readOnly: true,
+            className: "bg-gray-100",
+            value: selectedRow?.numero_semanas || ""
+        },
+        {
+            name: "cupo",
+            label: "Cupo",
+            type: "number",
+            required: true,
+            value: selectedRow?.cupo || ""
         },
         selectedRow
             ? {
@@ -337,7 +315,9 @@ export function TableFicha() {
         {
             name: "Acciones",
             cell: (row) => (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2"
+                    style={{ overflow: 'visible' }}
+                    onClick={e => e.stopPropagation()}>
                     <Button color="green" size="sm" className="flex items-center gap-2" onClick={() => handleAction(row)}>
                         <CheckIcon className="h-4 w-4" />
                     </Button>
@@ -346,10 +326,10 @@ export function TableFicha() {
                     </Button>
                 </div>
             ),
-            ignoreRowClick: true,
-            allowOverflow: true,
-            button: true,
-            width: "150px",
+            //ignoreRowClick: true,
+            //allowOverflow: true,
+            //button: true,
+            //width: "150px",
         },
     ]
 
@@ -364,6 +344,7 @@ export function TableFicha() {
                         className="flex items-center gap-2"
                         onClick={() => {
                             setSelectedRow(null)
+                            setTempDates({ fecha_inicio: null, fecha_fin: null, fin_lectiva: null });
                             setIsModalOpen(true)
                         }}
                     >
@@ -385,11 +366,11 @@ export function TableFicha() {
                 onSubmit={handleSubmit}
                 title={selectedRow ? "Editar ficha" : "Crear Nuevo ficha"}
                 fields={modalFields}
-                initialData={formData} // Cambiar a formData
-                onInputChange={handleInputChange} 
-                minDateForEnd={formData.fecha_inicio}
-                maxDateForStart={formData.fecha_fin} 
-                minDateForLectiva={formData.fecha_fin}
+                initialData={selectedRow ? { ...selectedRow } : null}
+                onInputChange={handleInputChange}
+                minDateForEnd={selectedRow?.fecha_inicio || tempDates.fecha_inicio}
+                maxDateForStart={selectedRow?.fecha_fin || tempDates.fecha_fin}
+                minDateForLectiva={selectedRow?.fecha_fin || tempDates.fecha_fin}
             />
         </div>
     );

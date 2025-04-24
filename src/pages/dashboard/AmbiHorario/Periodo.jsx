@@ -18,15 +18,10 @@ export function TablePeriodo() {
   const [selectedRow, setSelectedRow] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [notification, setNotification] = useState(null);
-  const [formData, setFormData] = useState({});
-
-  // Inicializar formData cuando se abre el modal
-  useEffect(() => {
-    if (isModalOpen) {
-      setFormData(selectedRow || {});
-    }
-  }, [isModalOpen, selectedRow]);
+  const [tempDates, setTempDates] = useState({
+    fecha_inicio: null,
+    fecha_fin: null
+  });
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -60,43 +55,15 @@ export function TablePeriodo() {
     })
   }
 
-  const showNotification = (type, message) => {
-    setNotification({ type, message });
-    setTimeout(() => setNotification(null), 5000);
-  };
-
-  const handleInputChange = (name, value) => {
-    const newFormData = { ...formData, [name]: value };
-
-    // Validación cruzada de fechas
-    if (name === 'fecha_inicio' || name === 'fecha_fin') {
-      const fechaInicio = newFormData.fecha_inicio ? new Date(newFormData.fecha_inicio) : null;
-      const fechaFin = newFormData.fecha_fin ? new Date(newFormData.fecha_fin) : null;
-
-      if (fechaInicio && fechaFin && fechaFin < fechaInicio) {
-        showNotification('red', 'La fecha fin no puede ser anterior a la fecha inicio');
-
-        // Revertir el cambio inválido
-        if (name === 'fecha_fin') {
-          newFormData.fecha_fin = formData.fecha_fin;
-        } else {
-          newFormData.fecha_inicio = formData.fecha_inicio;
-        }
-      }
-    }
-    setFormData(newFormData);
-  };
-
   const handleSubmit = async (formData) => {
     // Validación de fechas
     const fechaInicio = formData.fecha_inicio ? new Date(formData.fecha_inicio) : null;
     const fechaFin = formData.fecha_fin ? new Date(formData.fecha_fin) : null;
 
     if (fechaInicio && fechaFin && fechaFin < fechaInicio) {
-      showSwal("error", "Error en las fechas", "La fecha fin no puede ser anterior a la fecha inicio");
+      showSwal('red', 'La fecha de finalización no puede ser anterior a la fecha de inicio');
       return;
     }
-
     try {
       setIsLoading(true);
       setError(null);
@@ -113,16 +80,13 @@ export function TablePeriodo() {
       fetchData()
       setIsModalOpen(false)
       setSelectedRow(null)
+      setTempDates({ fecha_inicio: null, fecha_fin: null })
       showSwal("success", "Periodo guardado exitosamente")
     } catch (error) {
       console.error("Error al guardar el periodo:", error)
-
-      // Verifica si viene una respuesta con errores del backend
-      const backendError = error?.response?.data
-
-      // Extrae los mensajes y los convierte a texto plano
       let errorMessage = "Por favor, inténtalo de nuevo más tarde."
-      if (backendError) {
+      if (error?.response?.data) {
+        const backendError = error.response.data;
         if (typeof backendError === "string") {
           errorMessage = backendError
         } else if (Array.isArray(backendError.detail)) {
@@ -130,7 +94,6 @@ export function TablePeriodo() {
         } else if (backendError.detail) {
           errorMessage = backendError.detail
         } else {
-          // Si es un objeto de campos
           errorMessage = Object.entries(backendError)
             .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(", ") : value}`)
             .join("\n")
@@ -167,14 +130,35 @@ export function TablePeriodo() {
 
   const handleAction = (row) => {
     setSelectedRow(row);
+    setTempDates({
+      fecha_inicio: row.fecha_inicio,
+      fecha_fin: row.fecha_fin
+    });
     setIsModalOpen(true);
   };
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedRow(null);
-    setFormData(row || {});
-    setFormData({});
+    setTempDates({ fecha_inicio: null, fecha_fin: null });
+  };
+
+  const handleInputChange = (name, value) => {
+    // Actualizar fechas temporales para validación
+    if (name === 'fecha_inicio' || name === 'fecha_fin') {
+      setTempDates(prev => ({
+        ...prev,
+        [name]: value
+      }));
+
+      // Validación en tiempo real
+      const fechaInicio = name === 'fecha_inicio' ? new Date(value) : new Date(tempDates.fecha_inicio);
+      const fechaFin = name === 'fecha_fin' ? new Date(value) : new Date(tempDates.fecha_fin);
+
+      if (fechaInicio && fechaFin && fechaFin < fechaInicio) {
+        showSwal('red', 'La fecha fin no puede ser anterior a la fecha inicio');
+      }
+    }
   };
 
   const modalFields = [
@@ -190,17 +174,14 @@ export function TablePeriodo() {
       name: "fecha_inicio",
       type: "date",
       required: true,
-      value: selectedRow?.fecha_inicio || "",
-      minDate: null,
-      maxDate: formData.fecha_fin
+      value: selectedRow?.fecha_inicio || ""
     },
     {
       label: "Fecha fin",
       name: "fecha_fin",
       type: "date",
       required: true,
-      value: selectedRow?.fecha_fin || "",
-      minDate: formData.fecha_inicio
+      value: selectedRow?.fecha_fin || ""
     },
     {
       label: "Año",
@@ -235,7 +216,9 @@ export function TablePeriodo() {
     {
       name: "Acciones",
       cell: (row) => (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2"
+          style={{ overflow: 'visible' }}
+          onClick={e => e.stopPropagation()}>
           <Button color="green" size="sm" className="flex items-center gap-2" onClick={() => handleAction(row)}>
             <CheckIcon className="h-4 w-4" />
           </Button>
@@ -244,10 +227,10 @@ export function TablePeriodo() {
           </Button>
         </div>
       ),
-      ignoreRowClick: true,
-      allowOverflow: true,
-      button: true,
-      width: "150px",
+      //ignoreRowClick: true,
+      //allowOverflow: true,
+      //button: true,
+      //width: "150px",
     },
   ]
 
@@ -261,8 +244,9 @@ export function TablePeriodo() {
             size="sm"
             className="flex items-center gap-2"
             onClick={() => {
-              setSelectedRow(null)
-              setIsModalOpen(true)
+              setSelectedRow(null);
+              setTempDates({ fecha_inicio: null, fecha_fin: null });
+              setIsModalOpen(true);
             }}
           >
             <PlusIcon className="h-4 w-4" />
@@ -283,10 +267,10 @@ export function TablePeriodo() {
         onSubmit={handleSubmit}
         title={selectedRow ? "Editar periodo" : "Crear Nuevo periodo"}
         fields={modalFields}
-        initialData={formData}
+        initialData={selectedRow ? { ...selectedRow } : null}
         onInputChange={handleInputChange}
-        minDateForEnd={formData.fecha_inicio}
-        maxDateForStart={formData.fecha_fin}
+        minDateForEnd={selectedRow?.fecha_inicio || tempDates.fecha_inicio}
+        maxDateForStart={selectedRow?.fecha_fin || tempDates.fecha_fin}
       />
     </div>
   );

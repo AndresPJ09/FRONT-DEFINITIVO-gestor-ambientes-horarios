@@ -5,17 +5,17 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import DataTableComponent from "@/widgets/datatable/data-table";
 import { Service } from "@/data/api";
-import { CheckIcon, PlusIcon, TrashIcon } from "lucide-react";
-import { DynamicModal } from "@/widgets/Modal/DynamicModal";
 import Swal from "sweetalert2";
+import { useNavigate } from "react-router-dom";
+import { Plus } from "lucide-react";
+
 
 export function TableConsolidadoAmbiente() {
     const [data, setData] = useState([]);
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [selectedRow, setSelectedRow] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [notification, setNotification] = useState(null);
+    const navigate = useNavigate();
+
 
     const fetchData = useCallback(async () => {
         setIsLoading(true);
@@ -87,9 +87,26 @@ export function TableConsolidadoAmbiente() {
         },
         {
             name: "Acciones",
-            
-        },
-    ];    
+            cell: (row) => {
+                const estado = row.estado?.toLowerCase?.();
+                if (estado === "disponible") {
+                    return (
+                        <Button
+                            className="bg-blue-500 text-white hover:bg-blue-600 flex items-center gap-2"
+                            onClick={() => {
+                                navigate("/dashboard/horario");
+                            }}
+                        >
+                            <Plus size={16} />
+                            Asignar
+                        </Button>
+
+                    );
+                }
+                return <span className="text-gray-400">No disponible</span>;
+            }
+        }
+    ];
 
     return (
         <div className="mt-6 mb-8 space-y-6 bg-gradient-to-br from-blue-gray-50 mt-12 rounded-xl min-h-screen via-white to-white">

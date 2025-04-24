@@ -130,23 +130,23 @@ export function TableNivelFormacion() {
     };
 
     const modalFields = [
-        { 
-            label: "Código", 
-            name: "codigo", 
+        {
+            label: "Código",
+            name: "codigo",
             type: "text",
             required: true,
             value: selectedRow?.codigo || "",
         },
-        { 
-            label: "Nombre", 
-            name: "nombre", 
+        {
+            label: "Nombre",
+            name: "nombre",
             type: "text",
             required: true,
             value: selectedRow?.nombre || "",
         },
-        { 
-            label: "Duración", 
-            name: "duracion", 
+        {
+            label: "Duración",
+            name: "duracion",
             type: "text",
             required: true,
             value: selectedRow?.duracion || "",
@@ -188,7 +188,9 @@ export function TableNivelFormacion() {
         {
             name: "Acciones",
             cell: (row) => (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2"
+                    style={{ overflow: 'visible' }}
+                    onClick={e => e.stopPropagation()}>
                     <Button color="green" size="sm" className="flex items-center gap-2" onClick={() => handleAction(row)}>
                         <CheckIcon className="h-4 w-4" />
                     </Button>
@@ -197,10 +199,10 @@ export function TableNivelFormacion() {
                     </Button>
                 </div>
             ),
-            ignoreRowClick: true,
-            allowOverflow: true,
-            button: true,
-            width: "150px",
+            //ignoreRowClick: true,
+            //allowOverflow: true,
+            //button: true,
+            //width: "150px",
         },
     ]
 

@@ -161,14 +161,14 @@ export function DynamicModal({
                 onChange={(date) => handleInputChange(field.name, date)}
                 placeholder={field.label}
                 minDate={
-                  field.name === 'fecha_fin' || field.name === 'fecha_finalizacion' || field.name === 'fecha_fin_actividad'
+                  field.name === 'fecha_fin' || field.name === 'fecha_finalizacion' || field.name === 'fecha_fin_actividad' || field.name === 'fecha_fin_hora_egreso'
                     ? minDateForEnd
                     : field.name === 'fin_lectiva'
                       ? minDateForLectiva
                       : undefined
                 }
                 maxDate={
-                  field.name === 'fecha_inicio' || field.name === 'fecha_inicio_actividad'
+                  field.name === 'fecha_inicio' || field.name === 'fecha_inicio_actividad' || field.name === 'fecha_inicio_hora_ingreso'
                     ? maxDateForStart
                     : undefined
                 }

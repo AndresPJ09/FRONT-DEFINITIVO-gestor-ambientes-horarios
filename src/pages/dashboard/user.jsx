@@ -217,11 +217,12 @@ export function TableUser() {
       selector: (row) => DatatipoDocumento.find((item) => item.value === row.tipoDocumento)?.label,
       sortable: true,
     },
-
     {
       name: "Acciones",
       cell: (row) => (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2"
+          style={{ overflow: 'visible' }}
+          onClick={e => e.stopPropagation()}>
           <Button color="green" size="sm" className="flex items-center gap-2" onClick={() => handleAction(row)}>
             <CheckIcon className="h-4 w-4" />
           </Button>
@@ -230,13 +231,13 @@ export function TableUser() {
           </Button>
         </div>
       ),
-      ignoreRowClick: true,
-      allowOverflow: true,
-      button: true,
-      width: "150px",
+      //ignoreRowClick: true,
+      //allowOverflow: true,
+      //button: true,
+      //width: "150px",
     },
   ]
-
+  
   return (
     <div className="mt-6 mb-8 space-y-6">
       <Card className="bg-gradient-to-br from-blue-gray-50 rounded-xl min-h-screen via-white to-white">

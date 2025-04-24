@@ -11,6 +11,7 @@ import { DynamicModal } from "@/widgets/Modal/DynamicModal"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { PlusIcon, TrashIcon } from "lucide-react"
 import Swal2 from "sweetalert2"
+import Cookies from "js-cookie";
 
 export function TableHorario() {
     const [data, setData] = useState([]); // horarios
@@ -22,7 +23,7 @@ export function TableHorario() {
     const [programas, setProgramas] = useState([]);
     const [niveles, setNiveles] = useState([]);
     const [proyectos, setProyectos] = useState([]);
-    //const [fases, setFases] = useState([]);
+    const [fases, setFases] = useState([]);
 
     // Estados de modal / formulario
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -37,10 +38,15 @@ export function TableHorario() {
     const [fechaFinSeleccionado, setFechaFinSeleccionado] = useState('');
     const [finlectivaSeleccionado, setFinLectivaSeleccionado] = useState('');
     const [jornadaTecnicaSeleccionado, setJornadaTecnicaSeleccionado] = useState('');
-    //const [faseSeleccionada, setFaseSeleccionada] = useState("");
+    const [faseSeleccionada, setFaseSeleccionada] = useState("");
+    const [user, setUser] = useState(null);
 
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
+      const [tempDates, setTempDates] = useState({
+        fecha_inicio_hora_ingreso: null,
+        fecha_fin_hora_egreso: null
+      });
 
     const fetchData = useCallback(async () => {
         setIsLoading(true);
@@ -57,7 +63,7 @@ export function TableHorario() {
                     Service.get("/programa/"),
                     Service.get("/nivelformacion/"),
                     Service.get("/proyecto/"),
-                    //Service.get("/fase/")
+                    Service.get("/fase/")
                 ]);
             setData(data || []);
             setUsuarios(usuarios.map(u => ({ value: u.id, label: `${u.nombres} ${u.apellidos}` })));
@@ -65,10 +71,10 @@ export function TableHorario() {
             setAmbientes(ambientes.map(a => ({ value: a.id, label: `${a.codigo} ${a.nombre}` })));
             setPeriodos(periodos.map(p => ({ value: p.id, label: `${p.nombre} (${p.fecha_inicio} - ${p.fecha_fin})` })));
             setInstructores(instructores.map(i => ({ value: i.id, label: i.nombres })));
-            setProgramas(programas.map(p => ({ value: p.id, label: p.nombre, nivel_formacion_id: p.nivel_formacion_id })));
-            setNiveles(niveles.map(n => ({ value: n.id, label: n.nombre })));
-            setProyectos(proyectos.map(pj => ({ value: pj.id, label: pj.nombre, jornada_tecnica: pj.jornada_tecnica })));
-            //setFases(fases.map(fa => ({ value: fa.id, label: fa.nombre })));
+            setProgramas(programas);
+            setNiveles(niveles);
+            setProyectos(proyectos);
+            setFases(fases);
         } catch (e) {
             console.error(e);
             setError("Error al cargar datos. Intente de nuevo más tarde.");
@@ -81,15 +87,20 @@ export function TableHorario() {
         fetchData();
     }, [fetchData]);
 
-    // Inicializa formData al abrir modal
     useEffect(() => {
-        if (isModalOpen) setFormData(selectedRow || {});
-        else {
-            setProgramaSeleccionado(""); setNivelSeleccionado(""); setProyectoSeleccionado("");
-            setJornadaTecnicaSeleccionado(""); setFechaInicioSeleccionado(""); setFechaFinSeleccionado("");
-            setFinLectivaSeleccionado(""); //setFaseSeleccionada("");
+        const userId = Cookies.get("user"); // o el nombre que uses para almacenar el ID
+        if (userId) {
+            Service.get(`/usuario/${userId}/`)
+                .then((res) => {
+                    setUser(res);
+                    setFormData((prevData) => ({
+                        ...prevData,
+                        usuario_id: res.id, // preasignar al formData
+                    }));
+                })
+                .catch(() => console.error("Error al cargar el usuario"));
         }
-    }, [isModalOpen, selectedRow]);
+    }, []);
 
     const showSwal = (type, title, message = "", timer = 1500) => {
         Swal2.fire({
@@ -146,22 +157,24 @@ export function TableHorario() {
     };
 
     const handleInputChange = (name, value) => {
-        const newFormData = { ...formData, [name]: value };
+        setTempDates(prev => ({
+            ...prev,
+            [name]: value
+          }));
 
-        // Calcular la diferencia de horas si los campos de fecha están cambiados
-        if (name === 'fecha_inicio_hora_ingreso' || name === 'fecha_fin_hora_egreso') {
-            const inicio = new Date(newFormData.fecha_inicio_hora_ingreso);
-            const fin = new Date(newFormData.fecha_fin_hora_egreso);
+            // Calcular la diferencia de horas si los campos de fecha están cambiados
+            if (name === 'fecha_inicio_hora_ingreso' || name === 'fecha_fin_hora_egreso') {
+                const inicio = new Date(newFormData.fecha_inicio_hora_ingreso);
+                const fin = new Date(newFormData.fecha_fin_hora_egreso);
 
-            if (!isNaN(inicio.getTime()) && !isNaN(fin.getTime())) {
-                const diferenciaMilisegundos = fin - inicio;
-                const diferenciaHoras = diferenciaMilisegundos / (1000 * 60 * 60); // Convertir a horas
-                newFormData.horas = Math.max(0, Math.floor(diferenciaHoras)); // Asegurar que sea un número entero positivo
-            } else {
-                newFormData.horas = 0; // Si las fechas no son válidas, establecer las horas en 0
+                if (!isNaN(inicio.getTime()) && !isNaN(fin.getTime())) {
+                    const diferenciaMilisegundos = fin - inicio;
+                    const diferenciaHoras = diferenciaMilisegundos / (1000 * 60 * 60); // Convertir a horas
+                    newFormData.horas = Math.max(0, Math.floor(diferenciaHoras)); // Asegurar que sea un número entero positivo
+                } else {
+                    newFormData.horas = 0; // Si las fechas no son válidas, establecer las horas en 0
+                }
             }
-        }
-        setFormData(newFormData);
     };
 
     const handleSubmit = async (fd) => {
@@ -227,12 +240,17 @@ export function TableHorario() {
 
     const handleAction = (row) => {
         setSelectedRow(row);
+        setTempDates({
+            fecha_inicio_hora_ingreso: row.fecha_inicio_hora_ingreso,
+            fecha_fin_hora_egreso: row.fecha_fin_hora_egreso
+        });
         setIsModalOpen(true);
     };
 
     const handleCloseModal = () => {
         setIsModalOpen(false);
         setSelectedRow(null);
+        setTempDates({ fecha_inicio_hora_ingreso: null, fecha_fin_hora_egreso: null });
     };
 
     // Definición de campos del modal
@@ -240,12 +258,12 @@ export function TableHorario() {
         { label: "Usuario", name: "usuario_id", type: "select", required: true, value: formData.usuario_id || "", options: usuarios },
         { label: "Programa", name: "", type: "text", readOnly: true, value: programaSeleccionado },
         { label: "Nivel formación", name: "", type: "text", readOnly: true, value: nivelSeleccionado },
-        { label: "Ficha", name: "ficha_id", type: "select", required: true, value: formData.ficha_id || "", options: fichas, onChange: handleFichaChange},
+        { label: "Ficha", name: "ficha_id", type: "select", required: true, value: formData.ficha_id || "", options: fichas, onChange: handleFichaChange },
         { label: "Ambiente", name: "ambiente_id", type: "select", required: true, value: formData.ambiente_id || "", options: ambientes },
         { label: "Proyecto", name: "", type: "text", readOnly: true, value: proyectoSeleccionado },
-        { label: "Fecha inicio", name: "fecha_inicio", type: "date", required: true, value: fechaInicioSeleccionado, onChange: setFechaInicioSeleccionado},
-        { label: "Fecha fin", name: "fecha_fin", type: "date", required: true, value: fechaFinSeleccionado, onChange: setFechaFinSeleccionado},
-        { label: "Fin lectiva", name: "fin_lectiva", type: "date", required: true, value: finlectivaSeleccionado, onChange: setFinLectivaSeleccionado},
+        { label: "Fecha inicio", name: "fecha_inicio", type: "date", value: fechaInicioSeleccionado, onChange: setFechaInicioSeleccionado },
+        { label: "Fecha fin", name: "fecha_fin", type: "date", value: fechaFinSeleccionado, onChange: setFechaFinSeleccionado },
+        { label: "Fin lectiva", name: "fin_lectiva", type: "date", value: finlectivaSeleccionado, onChange: setFinLectivaSeleccionado },
         { label: "Jornada técnica", name: "jornada_tecnica", readOnly: true, type: "text", value: jornadaTecnicaSeleccionado },
         { label: "Fase", name: "", type: "text", readOnly: true, value: faseSeleccionada },
         { label: "Periodo", name: "periodo_id", type: "select", required: true, value: formData.periodo_id || "", options: periodos },
@@ -288,7 +306,9 @@ export function TableHorario() {
         {
             name: "Acciones",
             cell: (row) => (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2"
+                    style={{ overflow: 'visible' }}
+                    onClick={e => e.stopPropagation()}>
                     <Button color="green" size="sm" className="flex items-center gap-2" onClick={() => handleAction(row)}>
                         <CheckIcon className="h-4 w-4" />
                     </Button>
@@ -297,10 +317,10 @@ export function TableHorario() {
                     </Button>
                 </div>
             ),
-            ignoreRowClick: true,
-            allowOverflow: true,
-            button: true,
-            width: "150px",
+            //ignoreRowClick: true,
+            //allowOverflow: true,
+            //button: true,
+            //width: "150px",
         },
     ]
 
@@ -315,6 +335,7 @@ export function TableHorario() {
                         className="flex items-center gap-2"
                         onClick={() => {
                             setSelectedRow(null)
+                            setTempDates({ fecha_inicio_hora_ingreso: null, fecha_fin_hora_egreso: null });
                             setIsModalOpen(true)
                         }}
                     >
@@ -338,8 +359,8 @@ export function TableHorario() {
                 fields={modalFields}
                 initialData={formData}
                 onInputChange={handleInputChange}
-            //minDateForEnd={formData.fecha_inicio_hora_ingreso}
-            //maxDateForStart={formData.fecha_fin_hora_egreso}
+                minDateForEnd={formData.fecha_inicio_hora_ingreso}
+                maxDateForStart={formData.fecha_fin_hora_egreso}
             />
         </div>
     );
